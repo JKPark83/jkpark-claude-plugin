@@ -1,0 +1,8 @@
+# OS / editor cruft
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# node (in case tooling is added later)
+node_modules/

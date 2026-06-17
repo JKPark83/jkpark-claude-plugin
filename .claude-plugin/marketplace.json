@@ -1,0 +1,14 @@
+{
+  "name": "jkpark-plugins",
+  "owner": {
+    "name": "jkpark",
+    "email": "sanaigon@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "jkpark-claude-plugin",
+      "source": "./",
+      "description": "Idea-refiner and other personal tools."
+    }
+  ]
+}

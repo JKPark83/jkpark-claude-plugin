@@ -1,0 +1,10 @@
+{
+  "name": "jkpark-claude-plugin",
+  "version": "0.1.0",
+  "description": "Personal Claude Code plugin. Includes idea-refiner: an iterative Korean Q&A skill that turns a vague idea or feature into a concrete, buildable spec.",
+  "author": {
+    "name": "jkpark",
+    "email": "sanaigon@gmail.com"
+  },
+  "keywords": ["idea", "brainstorm", "spec", "discovery", "requirements"]
+}
