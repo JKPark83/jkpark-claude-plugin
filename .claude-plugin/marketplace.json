@@ -4,6 +4,10 @@
     "name": "jkpark",
     "email": "sanaigon@gmail.com"
   },
+  "metadata": {
+    "description": "jkpark's personal Claude Code plugins, including idea-refiner.",
+    "version": "0.1.0"
+  },
   "plugins": [
     {
       "name": "jkpark-claude-plugin",
