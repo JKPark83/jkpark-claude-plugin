@@ -19,6 +19,25 @@ It auto-triggers when you open with things like:
 
 Or invoke it explicitly with `/idea-refiner`.
 
+### `tech-blog-writer`
+
+Turns a **topic or a source article (URL)** into a finished **technical blog
+post** — researched, written for a **junior developer**, **image-rich** (it
+searches the web for relevant visuals and embeds them with attribution),
+**naturally translated** from English sources into Korean (no 번역투), and
+rendered as **HTML**. When done it asks **where to publish**, **remembers** your
+frequent targets, and offers to reuse them next time — supporting both **GitHub
+Pages / static repos** (write file + `git commit`/`push`) and **CMS paste**
+(Tistory / Velog / WordPress).
+
+It auto-triggers when you say things like:
+
+> "이 주제로 기술 블로그 써줘" · "이 링크 글로 정리해줘" · "이거 블로그 글로 써줘"
+
+Or invoke it explicitly with `/tech-blog-writer`.
+
+Remembered publish targets are stored at `~/.claude/blog-writer/targets.json`.
+
 ## Repository layout
 
 ```
@@ -28,6 +47,11 @@ Or invoke it explicitly with `/idea-refiner`.
 skills/
   idea-refiner/
     SKILL.md         # the skill (English instructions, Korean Q&A)
+  tech-blog-writer/
+    SKILL.md         # the skill (English instructions, Korean output)
+    references/
+      translation-and-style.md   # natural EN→KO translation + junior-audience guide
+      html-templates.md          # standalone + CMS-fragment HTML templates
 README.md
 ```
 
