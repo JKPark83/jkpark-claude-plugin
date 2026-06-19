@@ -1,11 +1,10 @@
 {
   "name": "jkpark-claude-plugin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Personal Claude Code plugin. Skills: idea-refiner (iterative Korean Q&A that turns a vague idea into a buildable spec) and tech-blog-writer (research a topic/article and publish an image-rich, junior-friendly Korean tech blog post as HTML). Agent: korean-reviewer (proofreads generated Korean documents for unnatural phrasing). Hook: auto-suggests korean-reviewer after .md/.html/.pptx docs are written.",
   "author": {
     "name": "jkpark",
     "email": "sanaigon@gmail.com"
   },
-  "hooks": "./hooks/hooks.json",
   "keywords": ["idea", "brainstorm", "spec", "discovery", "requirements", "blog", "tech-blog", "writing", "html", "translation", "korean", "proofreading"]
 }
