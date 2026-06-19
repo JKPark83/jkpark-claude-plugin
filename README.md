@@ -38,11 +38,31 @@ Or invoke it explicitly with `/tech-blog-writer`.
 
 Remembered publish targets are stored at `~/.claude/blog-writer/targets.json`.
 
+## Agents
+
+### `korean-reviewer`
+
+A **Sonnet**-backed subagent that proofreads a finished **Korean document**
+(Markdown / HTML / PPTX text) for **unnatural Korean** and rewrites it into
+natural, idiomatic phrasing — catching 번역투, English-calque wording, stiff
+officialese, and mistranslated idioms (e.g. "천장을 친다" → "한계에 부딪힌다").
+It preserves meaning, structure, code, and proper nouns, fixes only what is
+clearly unnatural, and returns a concise table of every change.
+
+## Hooks
+
+A **`PostToolUse`** hook watches `Write` / `Edit` / `MultiEdit`. Right after a
+**reader-facing document** (`.md` / `.html` / `.pptx`) is written, it advises
+the main session to run the `korean-reviewer` agent on that file. It's
+**advisory only** (never blocks), skips the plugin's own internal files, and —
+when several documents are produced at once — authorizes reviewing them **in
+parallel**. So generated Korean documents get proofread automatically.
+
 ## Repository layout
 
 ```
 .claude-plugin/
-  plugin.json        # plugin manifest
+  plugin.json        # plugin manifest (references hooks/hooks.json)
   marketplace.json   # marketplace entry (lets you install this repo locally)
 skills/
   idea-refiner/
@@ -52,6 +72,12 @@ skills/
     references/
       translation-and-style.md   # natural EN→KO translation + junior-audience guide
       html-templates.md          # standalone + CMS-fragment HTML templates
+agents/
+  korean-reviewer.md # Sonnet proofreader for unnatural Korean in generated docs
+hooks/
+  hooks.json         # PostToolUse → suggest korean-reviewer after doc writes
+  scripts/
+    korean-doc-check.sh   # detects .md/.html/.pptx writes, emits the advisory
 README.md
 ```
 
