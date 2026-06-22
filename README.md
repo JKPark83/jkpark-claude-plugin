@@ -38,6 +38,26 @@ Or invoke it explicitly with `/tech-blog-writer`.
 
 Remembered publish targets are stored at `~/.claude/blog-writer/targets.json`.
 
+### `analyze-image`
+
+Looks at an image you want analyzed **without making you mention the
+clipboard**. When you ask Claude to look at / read / explain / debug an image,
+screenshot, screen, UI, error, or diagram — and you didn't attach a file or
+give a path — the picture is almost always on the macOS **clipboard** (you just
+hit ⌘⇧4 / ⌃⌘⇧4 or copied an image). So this skill **checks the clipboard first
+by default**, pulls whatever screenshot/picture is there into a temp PNG via
+`osascript`, reads it, and answers in Korean. If the clipboard is empty it asks
+you to capture/copy/attach an image or give a path.
+
+It auto-triggers when you say things like:
+
+> "이 이미지 분석해줘" · "이 화면 뭔지 봐줘" · "방금 캡쳐한 거 봐바" · "이 에러 화면 분석해줘"
+
+Or invoke it explicitly with `/analyze-image`.
+
+> macOS only (uses `osascript`; no extra install). The clipboard image is
+> dumped to a single fixed temp file that's overwritten on each run.
+
 ## Agents
 
 ### `korean-reviewer`
@@ -72,6 +92,9 @@ skills/
     references/
       translation-and-style.md   # natural EN→KO translation + junior-audience guide
       html-templates.md          # standalone + CMS-fragment HTML templates
+  analyze-image/
+    SKILL.md         # checks the macOS clipboard first when asked to analyze an image
+    grab-clipboard.sh # osascript: dump clipboard image → temp PNG (or ERR_NO_IMAGE)
 agents/
   korean-reviewer.md # Sonnet proofreader for unnatural Korean in generated docs
 hooks/
