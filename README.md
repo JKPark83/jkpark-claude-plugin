@@ -78,6 +78,20 @@ the main session to run the `korean-reviewer` agent on that file. It's
 when several documents are produced at once — authorizes reviewing them **in
 parallel**. So generated Korean documents get proofread automatically.
 
+## Status line (opt-in)
+
+An **animated emoji status line** lives under [`statusline/`](statusline/). The
+mascot reacts to Claude's state — **🤖↔🧠 (orange)** while Claude is working,
+**😴↔💤 (blue)** while idle — and the line also shows
+`dir | git | model | effort | context%`.
+
+Claude Code plugins **cannot** register a main `statusLine` (only your own
+`settings.json` can), so this is a **copy-in** extra rather than an
+auto-activated plugin feature: drop `statusline/claude-statusline.sh` into
+`~/.claude/`, merge `statusline/settings-snippet.json` into your
+`settings.json`, and restart. Full instructions and customization are in
+[`statusline/README.md`](statusline/README.md).
+
 ## Repository layout
 
 ```
@@ -101,6 +115,10 @@ hooks/
   hooks.json         # PostToolUse → suggest korean-reviewer after doc writes
   scripts/
     korean-doc-check.sh   # detects .md/.html/.pptx writes, emits the advisory
+statusline/
+  claude-statusline.sh    # opt-in animated status line (working 🤖🧠 / idle 😴💤)
+  settings-snippet.json   # statusLine + hooks block to merge into settings.json
+  README.md               # install + customization guide
 README.md
 ```
 
