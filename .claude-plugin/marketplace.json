@@ -5,14 +5,14 @@
     "email": "sanaigon@gmail.com"
   },
   "metadata": {
-    "description": "jkpark's personal Claude Code plugins: idea-refiner and tech-blog-writer.",
-    "version": "0.2.1"
+    "description": "jkpark's personal Claude Code plugins: idea refinement, Korean tech writing, and Obsidian vault tooling.",
+    "version": "0.4.0"
   },
   "plugins": [
     {
       "name": "jkpark-claude-plugin",
       "source": "./",
-      "description": "idea-refiner, tech-blog-writer, and other personal tools."
+      "description": "idea-refiner, tech-blog-writer, obs / obs-recall / obs-html, and other personal tools."
     }
   ]
 }

@@ -187,7 +187,7 @@ Skill(skill="obs", args='Documents/ "{제목}"')
   경로: Documents/{제목}/index.html
   노트: Documents/{제목}/{제목}.md
   분량: 약 {N}자 · 그림 {M}개
-  열기: obsidian://open?vault=MyObsidian&file={URL인코딩된 경로}
+  열기: obsidian://open?vault={vault 이름}&file={URL인코딩된 경로}
 ```
 
 ---

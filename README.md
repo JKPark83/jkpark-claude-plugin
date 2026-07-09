@@ -38,6 +38,30 @@ Or invoke it explicitly with `/tech-blog-writer`.
 
 Remembered publish targets are stored at `~/.claude/blog-writer/targets.json`.
 
+### `obs` / `obs-recall`
+
+The **write** and **read** halves of an Obsidian vault used as a personal
+knowledge base.
+
+- **`obs`** saves content — Claude's last reply, a note, analysis artifacts —
+  into the vault as a **folder-note** (`{폴더}/{제목}/{제목}.md`) with
+  frontmatter tags, auto-routing by topic into `Projects/` · `Documents/` ·
+  `Paper/` · `Research/` · `Inbox/`, bundling any attachments (HTML, images)
+  alongside the note, and updating the `Home.md` index. It reuses tags already
+  present in the vault so the tag set doesn't sprawl.
+- **`obs-recall`** searches the vault — index → frontmatter tags → full text, in
+  that order (cheapest first). It knows the real content often lives in an
+  attached HTML file rather than the `.md`, so it searches and text-extracts
+  those too, and it always cites the source note's vault path. Read-only.
+
+Trigger them with `/obs`, `/obs-recall`, or naturally:
+
+> "이거 볼트에 저장해줘" · "예전에 정리한 거 있나?" · "볼트에서 찾아봐"
+
+> **Vault location:** both read `$OBSIDIAN_VAULT`, falling back to
+> `~/workspace/obsidian/MyObsidian`. Set the env var if your vault lives
+> elsewhere.
+
 ### `obs-html`
 
 Writes a topic up as a **self-contained, image-rich Korean HTML document** and
@@ -129,6 +153,10 @@ skills/
     references/
       translation-and-style.md   # natural EN→KO translation + junior-audience guide
       html-templates.md          # standalone + CMS-fragment HTML templates
+  obs/
+    SKILL.md         # save content into the Obsidian vault as a tagged folder-note
+  obs-recall/
+    SKILL.md         # search the vault (index → tags → full text, incl. attached HTML)
   obs-html/
     SKILL.md         # interview → research → Korean HTML doc → save via the obs skill
     references/
