@@ -38,6 +38,29 @@ Or invoke it explicitly with `/tech-blog-writer`.
 
 Remembered publish targets are stored at `~/.claude/blog-writer/targets.json`.
 
+### `obs-html`
+
+Writes a topic up as a **self-contained, image-rich Korean HTML document** and
+files it into your **Obsidian vault**. It always **interviews you first** (via
+`AskUserQuestion`) to pin down the **total length** and whether this is a
+**technical** or **non-technical** document, plus whatever else the topic
+genuinely hinges on. Technical docs are pitched so a **junior developer** can
+follow them; everything else is explained in plain language. The Korean reads
+naturally (no 번역투), and **every major section carries a visual** — a
+hand-drawn inline SVG diagram by default, or a properly attributed web image
+downloaded into the note's `assets/`. The HTML has **zero external
+dependencies** (no CDN, no web fonts) so it still opens years from now, offline.
+Saving is delegated to the `obs` skill, which files it as a folder-note and
+updates `Home.md`.
+
+It auto-triggers when you say things like:
+
+> "이 주제로 HTML 문서 만들어서 obs에 저장해줘" · "HTML로 정리해서 볼트에 넣어줘"
+
+Or invoke it explicitly with `/obs-html`.
+
+> Requires the `obs` skill (Obsidian vault saving) to be available.
+
 ### `analyze-image`
 
 Looks at an image you want analyzed **without making you mention the
@@ -106,6 +129,11 @@ skills/
     references/
       translation-and-style.md   # natural EN→KO translation + junior-audience guide
       html-templates.md          # standalone + CMS-fragment HTML templates
+  obs-html/
+    SKILL.md         # interview → research → Korean HTML doc → save via the obs skill
+    references/
+      writing-style.md   # 번역투 blacklist + junior / non-technical audience rules
+      html-template.md   # dependency-free, light+dark HTML template & SVG figure recipes
   analyze-image/
     SKILL.md         # checks the macOS clipboard first when asked to analyze an image
     grab-clipboard.sh # osascript: dump clipboard image → temp PNG (or ERR_NO_IMAGE)
