@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "jkpark's personal Claude Code plugins: idea refinement, Korean tech writing, and Obsidian vault tooling.",
-    "version": "0.4.0"
+    "version": "0.5.0"
   },
   "plugins": [
     {
       "name": "jkpark-claude-plugin",
       "source": "./",
-      "description": "idea-refiner, tech-blog-writer, obs / obs-recall / obs-html, and other personal tools."
+      "description": "idea-refiner, tech-blog-writer, obs / obs-recall / obs-html, skill-generator, and other personal tools."
     }
   ]
 }
