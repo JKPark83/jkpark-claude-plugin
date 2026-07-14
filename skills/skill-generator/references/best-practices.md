@@ -59,6 +59,10 @@ work.
 - **One-level-deep linking only** — never SKILL.md → advanced.md →
   details.md; agents skip intermediate hops.
 - Example-driven: concrete input→output pairs beat paragraphs of explanation.
+- Behavioral rules need a negative example. An abstract prohibition ("never
+  invent facts") fails at boundary cases; pair each rule with one concrete
+  violation, e.g. *never add work items the user didn't state — no "add
+  regression tests" bullet when the user only described the bug.*
 - Assume the model is smart — skip foundational definitions.
 - Tailor autonomy to the task:
   - High freedom (guidelines, checklists) for open-ended work — code review,
@@ -85,6 +89,8 @@ work.
 | Windows path syntax (`scripts\file.py`) | Breaks cross-platform; always forward slashes. |
 | Scripts that punt errors to the agent | Turns a deterministic step into a debugging session. |
 | Time-locked rules ("until August 2025 use old API") | Becomes stale documentation. |
+| Abstract prohibitions without a violation example | Models rationalize around vague rules at boundary cases; the example marks the line. |
+| Delivering a skill that was never executed | Format/trigger checks can't catch behavioral defects (invented facts, template drift) — run the behavioral eval (Gate 4). |
 | Shipping unvetted third-party skills | Skills are software — inspect before installing. |
 
 ## Scope reference

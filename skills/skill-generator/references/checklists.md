@@ -1,7 +1,8 @@
 # Verification Checklists
 
-Run BOTH gates on every generated or improved skill. Fix and re-check on any
-failure — never deliver with an open item.
+Run every gate on each generated or improved skill (Gate 2 runs during
+description drafting; Gates 1, 3, and 4 are the delivery gates). Fix and
+re-check on any failure — never deliver with an open item.
 
 ## Gate 1 — Pre-launch checklist
 
@@ -17,6 +18,8 @@ Body:
 - [ ] Body under 500 lines.
 - [ ] Supplementary files linked at depth 1 only (SKILL.md → file, no chains).
 - [ ] At least one concrete input→output example.
+- [ ] Every behavioral rule ("never X", "always Y") is paired with one
+      concrete violation example marking the boundary.
 - [ ] One default per decision point — no "use A, B, or C" without a default.
 - [ ] No time-locked language ("until <date>…") without a versioning strategy.
 - [ ] All file paths use forward slashes.
@@ -63,3 +66,31 @@ Report format (include in the final user-facing report, in Korean):
 | 2 | "…" | 발동 | ✅ |
 | 3 | "…" | 발동 | ✅ |
 | 4 | "…" (near-miss) | 미발동 | ✅ |
+
+## Gate 4 — Behavioral evaluation
+
+Static checks prove the skill is well-formed and will activate; only
+execution proves it behaves. Never deliver a skill that has not produced at
+least one output.
+
+1. Prepare 1–3 sample inputs. Prefer real past artifacts collected in the
+   interview (actual tickets, commits, reports); the body must not have been
+   written against those exact samples.
+2. For each input, run a fresh subagent that sees ONLY the generated skill
+   body plus the input (never the expected output), and have it produce the
+   skill's output.
+3. Judge each output against:
+   - the skill's own rules — especially fact fidelity: nothing in the output
+     that is not in the input or a necessary consequence of it;
+   - the template — all sections present, in order, correctly used;
+   - the real artifact, when one exists — facts dropped? structure lost?
+4. Any violation (invented content, missing sections, unverifiable
+   completion criteria) → fix the skill body — usually by adding a violation
+   example to the offending rule — then re-run that case.
+
+Report format (include in the final user-facing report, in Korean):
+
+| # | 입력 사례 | 위반 | 조치 |
+|---|-----------|------|------|
+| 1 | "…" | 없음 | — |
+| 2 | "…" | 작업 항목 창작 1건 | 규칙에 위반 예시 추가 → 재실행 통과 |

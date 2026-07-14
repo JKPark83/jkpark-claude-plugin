@@ -8,7 +8,8 @@ description: >-
   or "/skill-generator". Always interviews the user first (AskUserQuestion) to
   pin down purpose, triggers, autonomy, and tool dependencies, then generates
   an English SKILL.md following progressive-disclosure best practices, verifies
-  it against a pre-launch checklist plus a trigger-matching test, and asks where
+  it against a pre-launch checklist, a trigger-matching test, and a behavioral
+  evaluation on real sample inputs, and asks where
   to save it (personal, project, or the jkpark-claude-plugin repo — updating
   plugin.json when saving there).
 ---
@@ -32,9 +33,12 @@ following the SKILL.md open standard and progressive-disclosure methodology.
 2. **Description first.** The description does 80% of the work — draft and
    polish it before writing the body.
 3. **Never deliver unverified.** Every generated or improved skill must pass
-   the pre-launch checklist AND the trigger-matching test (Step 5).
-4. **Never commit.** Create/edit files only. At the end, remind the user to
-   commit themselves (e.g. via the `/commit` skill).
+   the pre-launch checklist, the trigger-matching test, AND the behavioral
+   evaluation (Step 5) — a skill that has never produced an output is not done.
+4. **Never commit.** Create/edit files only. When the destination is a git
+   repo (plugin or project), remind the user at the end to commit themselves
+   (e.g. via the `/commit` skill); a personal save (`~/.claude/skills/`) needs
+   no commit reminder.
 
 ## Mode detection
 
@@ -52,7 +56,7 @@ live there.
 
 ```
 1. Interview  →  2. Save location  →  3. Description draft
-→  4. Body + scaffolding  →  5. Verify (checklist + matching test)
+→  4. Body + scaffolding  →  5. Verify (checklist + matching + behavioral eval)
 →  6. Register (plugin.json)  →  7. Report
 ```
 
@@ -66,7 +70,7 @@ Cover all four dimensions (split into two calls if options need depth):
 | **Purpose & triggers** | The repetitive task the skill packages; the exact situations/phrases that should activate it; what is explicitly out of scope. |
 | **Autonomy level** | Free-form guideline (open-ended work like reviews) vs. strict ordered procedure (order-sensitive work like migrations). |
 | **Tools & dependencies** | MCP tools (`server:tool` notation), external CLIs, other skills to delegate to, whether `allowed-tools` is needed. |
-| **Example I/O pairs** | At least one concrete input → output example from the user's real usage. |
+| **Real samples & I/O** | At least one concrete input → output example. When the skill produces artifacts the user already creates (commit messages, Jira tickets, reports, docs), collect 2–3 real past samples — ask for them, or fetch them directly with available tools (git log, Jira API, vault search). Derive template/format options from those samples instead of inventing them, and keep the samples as holdout inputs for the behavioral evaluation (Step 5). |
 
 If the user's initial message already answers a dimension clearly, don't
 re-ask it — confirm it in one Korean sentence instead. After the interview,
@@ -109,20 +113,27 @@ Write the body applying `references/best-practices.md`. Key constraints:
 - One default per decision point — never "use A, B, or C".
 - Forward slashes in all paths; no time-locked rules.
 
-### 5. Verify — checklist + matching test
+### 5. Verify — checklist + matching + behavioral eval
 
-Run both gates from `references/checklists.md`:
+Run the three delivery gates from `references/checklists.md`:
 
-1. **Pre-launch checklist** — every item, mechanically. Fix and re-check on
-   any failure.
-2. **Trigger-matching test** — write 3 representative user requests + 1
-   near-miss that must NOT trigger. Judge each against the description
+1. **Pre-launch checklist** (Gate 1) — every item, mechanically. Fix and
+   re-check on any failure.
+2. **Trigger-matching test** (Gate 3) — write 3 representative user requests
+   + 1 near-miss that must NOT trigger. Judge each against the description
    *alone* (that is all the agent sees at selection time), alongside the
    descriptions of the user's other installed skills to catch overlap. If any
    representative request would miss, or the near-miss would fire, revise the
    description and re-test.
+3. **Behavioral evaluation** (Gate 4) — static checks prove the skill
+   activates; only execution proves it behaves. Run 1–3 sample inputs
+   (prefer the real samples collected in the interview) through fresh
+   subagents that see only the generated skill body plus the input, then
+   judge each output per Gate 4. On any violation, fix the body and re-run
+   that case.
 
-Show the test table (request → expected → verdict) in the final report.
+Show the matching-test table (request → expected → verdict) and the
+behavioral-eval table (case → violation → resolution) in the final report.
 
 ### 6. Register — plugin destination only
 
@@ -141,11 +152,14 @@ Skip this step entirely for personal/project destinations.
   경로: {SKILL.md path}
   구조: SKILL.md ({N}줄) + references/ {M}개 + scripts/ {K}개
   검증: 체크리스트 통과 · 매칭 테스트 {3}/3 + 오발동 방지 확인
+        · 행동 평가 {K}건 통과 ({위반·수정 내역 한 줄, 없으면 "위반 없음"})
   {plugin.json 갱신 내역 — 플러그인 저장 시}
-  커밋은 직접 진행해주세요 (/commit 사용 가능).
+  {커밋 안내 — 플러그인/프로젝트 저장 시에만: "커밋은 직접 진행해주세요 (/commit 사용 가능)"}
 ```
 
-New skills are picked up on session restart — mention this.
+After saving, check the session's available-skills list: new skills usually
+register immediately. Only if the skill is not listed there, tell the user
+to restart the session.
 
 ---
 
@@ -162,7 +176,9 @@ New skills are picked up on session restart — mention this.
 4. **Apply fixes.** If any fix changes the skill's behavior or trigger scope
    (not just format), confirm those with `AskUserQuestion` first; apply pure
    format/compliance fixes directly.
-5. **Re-verify** with both gates, then report as in Create Step 7.
+5. **Re-verify** with all three delivery gates — include a behavioral re-run
+   (Gate 4) whenever a fix touched output rules or templates — then report as
+   in Create Step 7.
 
 ---
 
