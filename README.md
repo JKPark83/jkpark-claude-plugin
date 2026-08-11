@@ -19,6 +19,25 @@ It auto-triggers when you open with things like:
 
 Or invoke it explicitly with `/idea-refiner`.
 
+### `plan-writer`
+
+The step **after `idea-refiner`**: takes a converged **기획서 / spec** and turns
+it into a **very detailed, code-level implementation plan document**. It scans
+the existing codebase in the background (reuse vs. build map — real file paths
+only), **interviews you idea-refiner-style** until every plan-shaping decision
+is settled, researches external facts in parallel instead of guessing, then
+writes a Korean **milestone-based plan** — decision table, architecture,
+per-milestone deliverables with code sketches and mechanically verifiable
+completion criteria, dependency graph, risks, file list, checklist — and saves
+it following your project's `docs/plan/` convention. Plans the whole 기획서 or
+just the subset you name ("3~6단계만").
+
+It auto-triggers when you say things like:
+
+> "이 기획서로 상세 plan 만들어줘" · "구현 계획서 만들어줘" · "개발 계획서로 구체화해줘"
+
+Or invoke it explicitly with `/plan-writer`.
+
 ### `tech-blog-writer`
 
 Turns a **topic or a source article (URL)** into a finished **technical blog
@@ -148,6 +167,10 @@ auto-activated plugin feature: drop `statusline/claude-statusline.sh` into
 skills/
   idea-refiner/
     SKILL.md         # the skill (English instructions, Korean Q&A)
+  plan-writer/
+    SKILL.md         # 기획서 → codebase scan + interview → code-level milestone plan
+    references/
+      plan-template.md   # Korean plan-document skeleton (sections, tables, milestone anatomy)
   tech-blog-writer/
     SKILL.md         # the skill (English instructions, Korean output)
     references/
