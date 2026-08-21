@@ -64,6 +64,29 @@ Awkward phrases hide in the middle of otherwise fine paragraphs.
    - "구워져 있다 (baked in)" → "내장되어 있다 / 고정되어 있다"
    - "표면화한다 (surfaces X)" → "드러낸다 / 보여준다"
    - "수화한다 (hydrates)" → "채워 넣는다 / 초기 데이터를 불러온다"
+
+   **Also check nouns and modifiers, not just verbs.** A translated *noun*
+   metaphor hides more easily than a verb one because it looks like a normal
+   compound word. If the Korean word only names the concept once you
+   back-translate it, replace it with what the sentence actually means —
+   describe the behavior rather than inventing a coinage.
+   - "우산형 스킬 (umbrella skill)" → "여러 용도를 묶은 스킬 /
+     주제별로 묶어서 만든다"
+   - "배관 (plumbing)" → "연결 작업 / 이어 붙이는 작업"
+   - "문턱값 (threshold)" → "임계값" (the term Korean docs actually use)
+   - "지문 (fingerprint)", "발자국 (footprint)", "은탄환 (silver bullet)" →
+     say the meaning: "식별값", "차지하는 용량", "만능 해결책"
+
+   Two extra checks for this category:
+   - **Raw English jargon left inside Korean prose** — a bare English noun
+     dropped into a Korean sentence ("관측 seam 보유", "stable/dynamic seam이
+     있다") is not a loanword the reader knows; either translate it
+     ("관측 지점", "캐시 분리 지점") or restructure the sentence to say what it
+     does. Keep it in English only when it is a real established term
+     (props, deploy, cache).
+   - **Term consistency across the document** — the same concept must keep one
+     name throughout ("문턱값" on one slide and "임계값" on another is a defect
+     even though both are understandable).
 4. **English-calque grammar habits** — grammatical patterns Korean does not
    need, carried over because English requires them:
    - Pronoun overuse: repeated "그것", "이것", "그들", "우리는", "당신" —
@@ -98,7 +121,11 @@ Awkward phrases hide in the middle of otherwise fine paragraphs.
 ## Procedure
 
 1. Read the file and scan the reader-facing body text **sentence by sentence**,
-   applying the detection heuristics above to each one.
+   applying the detection heuristics above to each one. Short fragments count:
+   headings, list bullets, table cells, figure captions, and text inside SVG
+   `<text>` elements are body text too. Compressed fragments are where calques
+   survive longest, because there is no surrounding sentence to make the
+   awkwardness obvious — read each one as if it were spoken aloud on its own.
 2. Find phrasing that matches the types above. Fix **only what is clearly
    unnatural** — leave fine sentences that are merely a matter of taste
    (no over-correction).
