@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "jkpark's personal Claude Code plugins: idea refinement, Korean tech writing, and Obsidian vault tooling.",
-    "version": "0.8.1"
+    "version": "0.10.1"
   },
   "plugins": [
     {
