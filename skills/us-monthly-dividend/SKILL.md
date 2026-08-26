@@ -25,7 +25,7 @@ them — do not guess a portfolio.
 - **design**: budget (KRW or USD — convert KRW→USD with the script's
   `usdkrw`), optional target monthly after-tax income, and covered-call
   tolerance. If tolerance is not stated, default: covered-call ETFs capped at
-  **40%** of the portfolio, single ticker capped at **40%**.
+  **20%** of the portfolio, single ticker capped at **40%**.
 - **analyze / monitor**: holdings as `TICKER shares` pairs (e.g. `SCHD 40,
   JEPI 30, O 20`). Shares missing → ask; do not assume equal weights.
 
