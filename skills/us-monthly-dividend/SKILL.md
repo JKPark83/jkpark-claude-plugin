@@ -43,11 +43,13 @@ portfolio that ignores what the account already holds.
     points at it (a link/ID or "지난번 시트"), load it with the Google
     Drive MCP tools (ToolSearch-load them if deferred): find it via
     `search_files` on the report title (`미국 월배당`, newest first) or use
-    the given ID, read it with `read_file_content`, and take each holdings
-    row's ticker + 주수 (rebalance sheets: the 최종 주수 column). Only
-    tickers and share counts come from the sheet — prices, yields, and FX
-    are always re-fetched fresh in Step 2, never trusted from the sheet.
-    Unreadable or unparsable sheet → say so and ask for `TICKER shares`.
+    the given ID, read it with `read_file_content`, and parse the
+    `[보유종목]` section: Ticker + 주수 become the current holdings, and —
+    when present — 평단(USD)/매입금액(USD) plus the `[요약]` section's
+    투자시작일·시작환율 carry the cost basis and 환차익 through to the new
+    report. Prices, yields, and FX are always re-fetched fresh in Step 2,
+    never trusted from the sheet. Unreadable or unparsable sheet → say so
+    and ask for `TICKER shares`.
 
   Holdings missing → ask; do not guess. The design caps above apply to the
   **combined** portfolio (existing value + new cash).
@@ -229,12 +231,24 @@ Then ask via AskUserQuestion whether to also export to Google Sheets
 (구글시트에도 저장할까요? 예/아니오 — 세션당 한 번; the user may also state
 the preference up front). On yes:
 
-1. Build a CSV from Steps 2–5 numbers only: a summary block (원금·환율·세후
-   월평균), the holdings table, then the 1–12월 pre-tax and after-tax rows.
-   The holdings table must keep this exact header so a later rebalance run
-   can parse the sheet back as the account state:
-   `종목,주수,단가(USD),비중(%),TTM배당률(%)` — rebalance sheets use
-   `종목,기존 주수,추가 매수,최종 주수,단가(USD),비중(%),TTM배당률(%)`.
+1. Build a CSV from Steps 2–5 numbers only. One sheet, sections stacked
+   vertically under fixed markers (`[요약]`, `[보유종목]`,
+   `[월별 배당 달력(세전 USD)]`, `[세후 월 현금흐름]`) so a later rebalance
+   run can parse it back. Layout follows the user's JK 포트폴리오 sheet
+   plus common dividend trackers (Tawcan, DividendEarner):
+   - `[요약]`: 리포트 제목·기준일, 투자시작일·시작환율, 현재환율,
+     환차익률·환차익금 (시작환율을 알 때만), 세전/세후 연 배당, 세후
+     월평균 (USD·KRW). Fresh design: 투자시작일 = as_of, 시작환율 =
+     현재환율.
+   - `[보유종목]` — exact header, one row per ticker, then 합계(USD)/합계(KRW):
+     `종목,Ticker,목표비중(%),밴드하한(%),밴드상한(%),평단(USD),주수,매입금액(USD),현재단가(USD),평가금액(USD),수익금(USD),수익률(%),현재비중(%),TTM배당률(%),리밸런싱주수`
+     주수 is always the **final** share count; 리밸런싱주수 holds this
+     run's buy (or explicitly opted-in sell) orders; 밴드하한/상한 are the
+     5/25 bounds around 목표비중; 평단·매입금액·수익 columns stay blank
+     when no cost basis is known — never invent one.
+   - `[월별 배당 달력(세전 USD)]`: rows = tickers, columns = 1월…12월,연간,
+     plus a 합계 row (the standard ticker × month matrix).
+   - `[세후 월 현금흐름]`: USD and KRW rows across 1월…12월,월평균.
 2. Upload with the Google Drive MCP tool
    `mcp__claude_ai_Google_Drive__create_file` (load it via ToolSearch first
    if deferred): `title` = the report title, `textContent` = the CSV,
