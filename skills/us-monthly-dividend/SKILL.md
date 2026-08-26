@@ -231,32 +231,45 @@ Then ask via AskUserQuestion whether to also export to Google Sheets
 (구글시트에도 저장할까요? 예/아니오 — 세션당 한 번; the user may also state
 the preference up front). On yes:
 
-1. Build a CSV from Steps 2–5 numbers only. One sheet, sections stacked
-   vertically under fixed markers (`[요약]`, `[보유종목]`,
+1. Write a JSON file (schema documented at the top of
+   `scripts/export_sheet.py`) from Steps 2–5 numbers only, then build a
+   **styled .xlsx**:
+
+   ```bash
+   python3 scripts/export_sheet.py report.json report.xlsx
+   ```
+
+   The script owns all styling (colored section/table headers, zebra rows,
+   red-gain/blue-loss fonts, `$`/`₩`/`%` number formats — Anthropic
+   xlsx-skill conventions) — never hand-build the sheet or restyle it.
+   One sheet, sections stacked under fixed markers (`[요약]`, `[보유종목]`,
    `[월별 배당 달력(세전 USD)]`, `[세후 월 현금흐름]`) so a later rebalance
    run can parse it back. Layout follows the user's JK 포트폴리오 sheet
    plus common dividend trackers (Tawcan, DividendEarner):
-   - `[요약]`: 리포트 제목·기준일, 투자시작일·시작환율, 현재환율,
-     환차익률·환차익금 (시작환율을 알 때만), 세전/세후 연 배당, 세후
-     월평균 (USD·KRW). Fresh design: 투자시작일 = as_of, 시작환율 =
-     현재환율.
+   - `[요약]`: label/value rows — 리포트 제목·기준일, 투자시작일·시작환율,
+     현재환율, 환차익률·환차익금 (시작환율을 알 때만), 투자원금·투자금액,
+     세전/세후 연 배당, 세후 월평균 (USD·KRW). Fresh design: 투자시작일 =
+     as_of, 시작환율 = 현재환율.
    - `[보유종목]` — exact header, one row per ticker, then 합계(USD)/합계(KRW):
      `종목,Ticker,목표비중(%),밴드하한(%),밴드상한(%),평단(USD),주수,매입금액(USD),현재단가(USD),평가금액(USD),수익금(USD),수익률(%),현재비중(%),TTM배당률(%),리밸런싱주수`
      주수 is always the **final** share count; 리밸런싱주수 holds this
      run's buy (or explicitly opted-in sell) orders; 밴드하한/상한 are the
-     5/25 bounds around 목표비중; 평단·매입금액·수익 columns stay blank
-     when no cost basis is known — never invent one.
+     5/25 bounds around 목표비중; 평단·매입금액·수익 columns stay `null`
+     (blank cells) when no cost basis is known — never invent one.
    - `[월별 배당 달력(세전 USD)]`: rows = tickers, columns = 1월…12월,연간,
      plus a 합계 row (the standard ticker × month matrix).
    - `[세후 월 현금흐름]`: USD and KRW rows across 1월…12월,월평균.
 2. Upload with the Google Drive MCP tool
    `mcp__claude_ai_Google_Drive__create_file` (load it via ToolSearch first
-   if deferred): `title` = the report title, `textContent` = the CSV,
-   `contentMimeType` = `text/csv`. The default conversion turns it into a
-   Google Sheets document — relay the returned link.
-3. If the tool is unavailable or the upload fails, save the CSV as an
-   attachment inside the same obs folder-note folder and say the Sheets
-   upload failed — do not silently drop it.
+   if deferred): `title` = the report title, `base64Content` = the base64 of
+   report.xlsx (`base64 -i report.xlsx`), `contentMimeType` =
+   `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`. The
+   default conversion turns it into a Google Sheets document and **keeps the
+   xlsx styling** — relay the returned link.
+3. If openpyxl is missing, install it (`python3 -m pip install openpyxl`)
+   and retry once; if the Drive tool is unavailable or the upload fails,
+   save report.xlsx as an attachment inside the same obs folder-note folder
+   and say the Sheets upload failed — do not silently drop it.
 
 ## Worked example (abbreviated)
 
