@@ -1,6 +1,6 @@
 ---
 name: us-monthly-dividend
-description: Designs and analyzes US monthly-dividend income portfolios (SCHD, JEPI, JEPQ, O, DGRO, covered-call ETFs, REITs). Covers four operations - designing a portfolio from a budget and target monthly income with a Jan-Dec dividend calendar that fills every month; analyzing existing holdings for month-by-month cash flow and coverage gaps; computing after-tax cash flow for a Korean resident (15% US withholding); and checking holdings for dividend cuts or payout anomalies. In design mode, proposes the covered-call cap and ticker count from current market conditions (VIX, US 10Y yield + three parallel analyst subagents) with user confirmation instead of fixed defaults. Fetches dividend history, yields, and market indicators deterministically via a bundled yfinance script and saves the report to the Obsidian vault via the obs skill. Use when the user mentions 월배당, 배당 달력, 배당 포트폴리오, 세후 배당, 배당컷 - e.g. "월배당 포트폴리오 짜줘", "내 배당 포트폴리오 분석해줘", "세후 월 현금흐름 계산해줘", "배당컷 있는지 점검해줘", "design a monthly dividend portfolio". Not for growth-stock screening, options strategies, or Korean domestic (KOSPI) dividend stocks.
+description: Designs and analyzes US monthly-dividend income portfolios (SCHD, JEPI, JEPQ, O, DGRO, covered-call ETFs, REITs). Covers five operations - designing a portfolio from a budget and target monthly income with a Jan-Dec dividend calendar that fills every month; rebalancing an existing account when new money is added (buy-only allocation of the new cash to underweight tickers, Swedroe 5/25 band check, sells only on explicit opt-in); analyzing existing holdings for month-by-month cash flow and coverage gaps; computing after-tax cash flow for a Korean resident (15% US withholding); and checking holdings for dividend cuts or payout anomalies. In design/rebalance mode, proposes the covered-call cap and ticker count from current market conditions (VIX, US 10Y yield + three parallel analyst subagents) with user confirmation instead of fixed defaults. Fetches dividend history, yields, and market indicators deterministically via a bundled yfinance script, saves the report to the Obsidian vault via the obs skill, and offers an optional Google Sheets export. Use when the user mentions 월배당, 배당 달력, 배당 포트폴리오, 세후 배당, 배당컷, 추가납입, 리밸런싱 - e.g. "월배당 포트폴리오 짜줘", "1000만원 추가납입하려는데 재조정해줘", "내 배당 포트폴리오 분석해줘", "세후 월 현금흐름 계산해줘", "배당컷 있는지 점검해줘", "design a monthly dividend portfolio". Not for growth-stock screening, options strategies, or Korean domestic (KOSPI) dividend stocks.
 ---
 
 # US Monthly-Dividend Portfolio
@@ -14,11 +14,18 @@ with the fixed disclaimer in Step 6 — this skill informs, it does not advise.
 | User gives | Mode |
 |------------|------|
 | Budget and/or target monthly income, no holdings | **design** |
+| New money (추가납입) + an existing account | **rebalance** |
 | A holdings list (ticker + shares) | **analyze** (includes calendar, after-tax, and monitor verdicts) |
 | Holdings + asks only about cuts/anomalies ("배당컷 점검") | **monitor** |
 
 If neither a budget nor holdings are present, ask one Korean question to get
 them — do not guess a portfolio.
+
+When the user gives only a budget, ask one Korean question before designing:
+does an existing account already hold dividend assets (기존 계좌 보유 여부)?
+Yes → switch to **rebalance** and collect the holdings; no → stay **design**.
+Words like 추가납입/추납/재조정 always mean rebalance — never design a fresh
+portfolio that ignores what the account already holds.
 
 ## Step 1 — Collect input
 
@@ -29,6 +36,21 @@ them — do not guess a portfolio.
   in Step 2.5 from market conditions. Hard guardrails that no assessment or
   proposal may cross: covered-call ETFs ≤ **40%** of the portfolio, single
   ticker ≤ **40%**, ticker count 3–6.
+- **rebalance**: the new cash (KRW or USD) plus current holdings, from
+  either source:
+  - `TICKER shares` pairs typed by the user, or
+  - **the Google Sheet this skill previously exported** — when the user
+    points at it (a link/ID or "지난번 시트"), load it with the Google
+    Drive MCP tools (ToolSearch-load them if deferred): find it via
+    `search_files` on the report title (`미국 월배당`, newest first) or use
+    the given ID, read it with `read_file_content`, and take each holdings
+    row's ticker + 주수 (rebalance sheets: the 최종 주수 column). Only
+    tickers and share counts come from the sheet — prices, yields, and FX
+    are always re-fetched fresh in Step 2, never trusted from the sheet.
+    Unreadable or unparsable sheet → say so and ask for `TICKER shares`.
+
+  Holdings missing → ask; do not guess. The design caps above apply to the
+  **combined** portfolio (existing value + new cash).
 - **analyze / monitor**: holdings as `TICKER shares` pairs (e.g. `SCHD 40,
   JEPI 30, O 20`). Shares missing → ask; do not assume equal weights.
 
@@ -39,9 +61,9 @@ python3 scripts/fetch_dividends.py TICKER1 TICKER2 ...
 ```
 
 - **analyze/monitor**: pass exactly the user's tickers.
-- **design**: pass the candidate universe below plus any tickers the user
-  named, and add `--market` (VIX and US 10Y for Step 2.5). Trim or extend
-  the universe only on user request.
+- **design/rebalance**: pass the candidate universe below plus any tickers
+  the user named or already holds, and add `--market` (VIX and US 10Y for
+  Step 2.5). Trim or extend the universe only on user request.
 
 | Group | Tickers | Note |
 |-------|---------|------|
@@ -59,7 +81,7 @@ Rules for using the output:
 - If the script exits non-zero (all tickers failed), stop and report the
   stderr message; do not fall back to web estimates.
 
-## Step 2.5 — Market assessment (design only)
+## Step 2.5 — Market assessment (design & rebalance)
 
 Decides the covered-call cap and target ticker count instead of hardcoding
 them. Skip when the user stated both explicitly in Step 1, or in
@@ -110,6 +132,25 @@ drop one share and leave the cash uninvested. **Violation example:** 342
 shares makes MAIN 40.04% of the portfolio — over the 40% cap; buy 341.
 Mention only tickers actually in the chosen portfolio in the report.
 
+**rebalance** instead of choosing from scratch (buy-only pattern, after
+RePort / lazy-allocation / M1 dynamic rebalancing):
+1. Value the existing holdings at script prices; combined total = existing
+   value + new cash. Compute Step 5 verdicts for the held tickers now.
+2. Set target weights: the design-optimal portfolio for the combined total
+   under the confirmed caps, keeping the held tickers unless one is
+   REVIEW-flagged or outside the universe (then its target grows no further
+   — say why).
+3. Allocate the **new cash only** — no sells by default (taxes, fees):
+   repeatedly buy 1 share of the most-underweight ticker (target − current,
+   in dollars) until the remaining cash cannot buy the cheapest underweight
+   share. Never send new cash to a REVIEW-flagged ticker.
+4. Judge the result with the Swedroe **5/25 band**: out-of-band when a
+   ticker is off target by ≥5%p absolute (targets ≥20%) or ≥25% relative
+   (targets <20%). Still out-of-band after allocation → present the sell
+   orders that would fix it as an *option*; execute sells only when the
+   user explicitly opts in. Existing positions may already break a hard
+   cap — buying never fixes that, so flag it instead of selling silently.
+
 ## Step 4 — After-tax cash flow
 
 - Default: `세후 = 세전 × 0.85` (US 15% treaty withholding; no additional
@@ -121,7 +162,9 @@ Mention only tickers actually in the chosen portfolio in the report.
 
 ## Step 5 — Monitor verdicts (deterministic)
 
-Apply to every ticker in analyze/monitor mode; skip in pure design mode.
+Apply to every held ticker in analyze/monitor/rebalance mode (rebalance
+computes them during Step 3, before allocating new cash); skip in pure
+design mode.
 
 | Verdict | Condition (first match wins) |
 |---------|------------------------------|
@@ -143,10 +186,16 @@ Output the full report in chat using exactly these sections:
 ## 요약
 - 투자원금/평가액, 세전·세후 연 배당, 평균 월 세후 현금흐름 (USD·KRW), 적용 환율
 
-## 시장 상황 평가 (design에서 Step 2.5를 수행한 경우만)
+## 시장 상황 평가 (Step 2.5를 수행한 경우만)
 - 지표: VIX {now} (3개월 전 {then}), 미 10년물 {now}% ({then}%)
 - 애널리스트 3인 판정 각 1줄 + 근거
 - 적용 파라미터: 커버드콜 한도 {x}%, 종목 수 {n} (사용자 확인: 제안 적용/수정)
+
+## 리밸런싱 내역 (rebalance만)
+- 기존 평가액, 신규 납입액, 합산 총액 (USD·KRW)
+- | 종목 | 기존 주수 | 추가 매수 | 최종 주수 | 목표 비중 | 실제 비중 | 드리프트 | 5/25 밴드 |
+- (해당 시) buy-only로 해소되지 않은 밴드 초과 종목 + 매도 옵션 1줄
+  (매도는 사용자가 명시적으로 요청할 때만 반영)
 
 ## 월별 배당 달력 (세전 USD)
 | 종목 | 1월 | … | 12월 | 연간 |
@@ -169,12 +218,31 @@ Output the full report in chat using exactly these sections:
 The 근거 column cites the numbers that produced the verdict (e.g. "TTM 4.58
 vs 직전 4.81, -4.8% → WARN").
 
-## Step 7 — Save to Obsidian
+## Step 7 — Save & export
 
 Invoke the `obs` skill to save the full report, titled
 `미국 월배당 {mode} {as_of}` (routing: Research). Then relay the obsidian://
 link from obs to the user. If obs fails, keep the chat report and say the
 vault save failed — do not silently drop it.
+
+Then ask via AskUserQuestion whether to also export to Google Sheets
+(구글시트에도 저장할까요? 예/아니오 — 세션당 한 번; the user may also state
+the preference up front). On yes:
+
+1. Build a CSV from Steps 2–5 numbers only: a summary block (원금·환율·세후
+   월평균), the holdings table, then the 1–12월 pre-tax and after-tax rows.
+   The holdings table must keep this exact header so a later rebalance run
+   can parse the sheet back as the account state:
+   `종목,주수,단가(USD),비중(%),TTM배당률(%)` — rebalance sheets use
+   `종목,기존 주수,추가 매수,최종 주수,단가(USD),비중(%),TTM배당률(%)`.
+2. Upload with the Google Drive MCP tool
+   `mcp__claude_ai_Google_Drive__create_file` (load it via ToolSearch first
+   if deferred): `title` = the report title, `textContent` = the CSV,
+   `contentMimeType` = `text/csv`. The default conversion turns it into a
+   Google Sheets document — relay the returned link.
+3. If the tool is unavailable or the upload fails, save the CSV as an
+   attachment inside the same obs folder-note folder and say the Sheets
+   upload failed — do not silently drop it.
 
 ## Worked example (abbreviated)
 
@@ -182,3 +250,9 @@ Input: "SCHD 40, JEPI 30, O 20 분석해줘"
 → Step 2 fetches the 3 tickers → calendar shows 1월 합계 $4.9 (O only),
 3월 $25.0 (SCHD+JEPI+O) … → 세후 = 각 월 × 0.85, KRW 병기 → JEPI TTM 4.58 <
 4.81×0.97 → WARN → report per Step 6 → obs save.
+
+Input: "계좌에 JEPQ 20주, O 15주 있는데 1,000만원 추가납입해서 재조정해줘"
+→ rebalance: fetch universe + holdings with `--market` → Step 2.5 proposal
+→ target weights for (기존 평가액 + 1,000만원) → new cash buys the most
+underweight ticker one share at a time, no sells → 드리프트/5/25 밴드 표 →
+report + obs save → "구글시트에도 저장할까요?".
