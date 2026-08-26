@@ -2,7 +2,7 @@
 """Fetch dividend history, yield, and payout months for US tickers via yfinance.
 
 Usage:
-    python3 fetch_dividends.py SCHD JEPI O [--recent N]
+    python3 fetch_dividends.py SCHD JEPI O [--recent N] [--market]
 
 Prints a single JSON object to stdout:
 {
@@ -20,6 +20,12 @@ Prints a single JSON object to stdout:
       "error": null                  # or a message; other fields null then
     }, ...
   }
+}
+
+With --market, adds a "market" block (values null when unavailable):
+{
+  "vix": 15.2, "vix_3m_ago": 18.4,          # CBOE VIX close, now and ~3 months back
+  "us10y_pct": 4.25, "us10y_3m_ago_pct": 4.6 # US 10Y treasury yield (%, ^TNX)
 }
 
 Exit codes: 0 on success (per-ticker failures are reported inline in "error"),
@@ -90,13 +96,34 @@ def fetch_ticker(symbol, recent_n):
     }
 
 
+def fetch_market():
+    # Yahoo quotes ^TNX directly in percent (e.g. 4.25), unlike CBOE's 10x convention
+    out = {"vix": None, "vix_3m_ago": None, "us10y_pct": None, "us10y_3m_ago_pct": None}
+    for symbol, key, scale in (("^VIX", "vix", 1.0), ("^TNX", "us10y_pct", 1.0)):
+        try:
+            hist = yf.Ticker(symbol).history(period="6mo")
+            if hist is None or hist.empty:
+                continue
+            closes = hist["Close"]
+            out[key] = round(float(closes.iloc[-1]) * scale, 2)
+            past_idx = max(0, len(closes) - 63)  # ~3 months of trading days
+            past_key = "vix_3m_ago" if key == "vix" else "us10y_3m_ago_pct"
+            out[past_key] = round(float(closes.iloc[past_idx]) * scale, 2)
+        except Exception:
+            pass  # market block is optional context; nulls are allowed
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("tickers", nargs="+", help="US ticker symbols, e.g. SCHD JEPI O")
     parser.add_argument("--recent", type=int, default=8, help="recent payments to include")
+    parser.add_argument("--market", action="store_true", help="include VIX / US 10Y market block")
     args = parser.parse_args()
 
     result = {"as_of": datetime.now().strftime("%Y-%m-%d"), "usdkrw": None, "tickers": {}}
+    if args.market:
+        result["market"] = fetch_market()
 
     try:
         fx = last_close(yf.Ticker("USDKRW=X"))
