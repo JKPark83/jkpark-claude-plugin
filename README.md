@@ -1,225 +1,72 @@
 # jkpark-claude-plugin
 
-A personal [Claude Code](https://docs.claude.com/en/docs/claude-code) plugin.
+개인용 [Claude Code](https://docs.claude.com/en/docs/claude-code) 플러그인.
+스킬 14개 + 에이전트 1개 + 훅 1개 + 상태줄(옵션)로 구성된다.
 
 ## Skills
 
-### `idea-refiner`
+### 기획 · 계획
 
-An iterative **Korean Q&A** session that turns a vague idea or feature into a
-concrete, immediately-buildable spec. It asks sharp, decision-forcing questions
-one small batch at a time, runs **parallel web research** as background
-subagents when external facts are needed, and finally prints a structured
-summary on screen — which you can optionally save as a Markdown file under
-`ideas/`.
+| 스킬 | 하는 일 | 트리거 예시 |
+|------|---------|-------------|
+| `idea-refiner` | 막연한 아이디어를 한국어 Q&A로 파고들어 바로 만들 수 있는 스펙으로 수렴 | "이런 기능 어떨까?" |
+| `plan-writer` | 기획서 + 코드베이스 스캔 + 인터뷰 → 코드 수준 한국어 마일스톤 구현 계획서 | "이 기획서로 상세 plan 만들어줘" |
 
-It auto-triggers when you open with things like:
+### 글쓰기 · 문서
 
-> "이런 기능 어떨까?" · "새 아이디어가 있어" · "이거 한번 만들어볼까?"
+| 스킬 | 하는 일 | 트리거 예시 |
+|------|---------|-------------|
+| `tech-blog-writer` | 주제/링크를 주니어 눈높이의 이미지 풍부한 한국어 기술 블로그 HTML로 작성·발행 | "이 주제로 기술 블로그 써줘" |
+| `obs-html` | 인터뷰 → 이미지 포함 독립형 한국어 HTML 문서 → obs로 볼트 저장 | "HTML로 정리해서 볼트에 넣어줘" |
+| `obs-ppt` | 인터뷰 기반 16:9 PPT형 HTML 슬라이드 덱(키보드 내비·발표자 노트) → obs 저장 | "이거 슬라이드로 만들어줘" |
 
-Or invoke it explicitly with `/idea-refiner`.
+### Obsidian 지식베이스
 
-### `plan-writer`
+| 스킬 | 하는 일 | 트리거 예시 |
+|------|---------|-------------|
+| `obs` | 내용을 태그 달린 folder-note로 볼트에 저장하고 `Home.md` 인덱스 갱신 | "이거 볼트에 저장해줘" |
+| `obs-recall` | 볼트를 인덱스 → 태그 → 전문 순으로 검색 (첨부 HTML 포함, 읽기 전용) | "예전에 정리한 거 있나?" |
 
-The step **after `idea-refiner`**: takes a converged **기획서 / spec** and turns
-it into a **very detailed, code-level implementation plan document**. It scans
-the existing codebase in the background (reuse vs. build map — real file paths
-only), **interviews you idea-refiner-style** until every plan-shaping decision
-is settled, researches external facts in parallel instead of guessing, then
-writes a Korean **milestone-based plan** — decision table, architecture,
-per-milestone deliverables with code sketches and mechanically verifiable
-completion criteria, dependency graph, risks, file list, checklist — and saves
-it following your project's `docs/plan/` convention. Plans the whole 기획서 or
-just the subset you name ("3~6단계만").
+> 볼트 경로는 `$OBSIDIAN_VAULT`, 기본값 `~/workspace/obsidian/MyObsidian`.
 
-It auto-triggers when you say things like:
+### iOS 개발 · 배포
 
-> "이 기획서로 상세 plan 만들어줘" · "구현 계획서 만들어줘" · "개발 계획서로 구체화해줘"
+| 스킬 | 하는 일 | 트리거 예시 |
+|------|---------|-------------|
+| `ios-project-setup` | xcodegen 리포 스캔 → 훅·CLAUDE.md·settings·TestFlight CI 워크플로 셋팅 | "iOS 프로젝트 초기 셋팅 해줘" |
+| `testflight-credentials` | App ID·배포 인증서(.p12)를 API로 생성하고 GitHub 시크릿 5종 등록 | "TestFlight 올릴 준비 해줘" |
+| `testflight-release` | 프리플라이트 → dev→main 머지 커밋 푸시 → TestFlight 워크플로 기동 확인 | "테플 올려줘" |
+| `app-store-metadata` | 리포 근거 기반 심사 메타데이터(설명·키워드·개인정보 라벨 등) 초안 → 승인 후 ASC 입력 | "앱 심사 제출 준비해줘" |
 
-Or invoke it explicitly with `/plan-writer`.
+### 투자
 
-### `tech-blog-writer`
+| 스킬 | 하는 일 | 트리거 예시 |
+|------|---------|-------------|
+| `us-monthly-dividend` | 미국 월배당 포트폴리오 설계·분석 — 1~12월 배당 달력, 세후(15% 원천징수) 현금흐름, 배당컷 OK/WARN/REVIEW 판정 (yfinance 스크립트 기반), obs 저장 | "월배당 포트폴리오 짜줘" |
 
-Turns a **topic or a source article (URL)** into a finished **technical blog
-post** — researched, written for a **junior developer**, **image-rich** (it
-searches the web for relevant visuals and embeds them with attribution),
-**naturally translated** from English sources into Korean (no 번역투), and
-rendered as **HTML**. When done it asks **where to publish**, **remembers** your
-frequent targets, and offers to reuse them next time — supporting both **GitHub
-Pages / static repos** (write file + `git commit`/`push`) and **CMS paste**
-(Tistory / Velog / WordPress).
+### 유틸리티 · 메타
 
-It auto-triggers when you say things like:
+| 스킬 | 하는 일 | 트리거 예시 |
+|------|---------|-------------|
+| `analyze-image` | 이미지 분석 요청 시 macOS 클립보드를 먼저 확인해 바로 읽음 (macOS 전용) | "방금 캡쳐한 거 봐바" |
+| `skill-generator` | 인터뷰 → SKILL.md 생성/개선 → 체크리스트·매칭·행동 평가 3중 검증 → 플러그인 등록 | "스킬 만들어줘" |
 
-> "이 주제로 기술 블로그 써줘" · "이 링크 글로 정리해줘" · "이거 블로그 글로 써줘"
+## Agents / Hooks / Status line
 
-Or invoke it explicitly with `/tech-blog-writer`.
+| 구성요소 | 내용 |
+|----------|------|
+| `korean-reviewer` (agent) | 생성된 한국어 문서(.md/.html/.pptx)의 번역투·어색한 표현을 교정하는 Sonnet 서브에이전트 |
+| PostToolUse hook | 문서 파일이 쓰이면 korean-reviewer 실행을 자동 제안 (advisory, 차단 없음) |
+| Status line (옵션) | 작업 중 🤖🧠 / 대기 😴💤 애니메이션 상태줄 — `statusline/`을 직접 복사해 설치 ([가이드](statusline/README.md)) |
 
-Remembered publish targets are stored at `~/.claude/blog-writer/targets.json`.
-
-### `obs` / `obs-recall`
-
-The **write** and **read** halves of an Obsidian vault used as a personal
-knowledge base.
-
-- **`obs`** saves content — Claude's last reply, a note, analysis artifacts —
-  into the vault as a **folder-note** (`{폴더}/{제목}/{제목}.md`) with
-  frontmatter tags, auto-routing by topic into `Projects/` · `Documents/` ·
-  `Paper/` · `Research/` · `Inbox/`, bundling any attachments (HTML, images)
-  alongside the note, and updating the `Home.md` index. It reuses tags already
-  present in the vault so the tag set doesn't sprawl.
-- **`obs-recall`** searches the vault — index → frontmatter tags → full text, in
-  that order (cheapest first). It knows the real content often lives in an
-  attached HTML file rather than the `.md`, so it searches and text-extracts
-  those too, and it always cites the source note's vault path. Read-only.
-
-Trigger them with `/obs`, `/obs-recall`, or naturally:
-
-> "이거 볼트에 저장해줘" · "예전에 정리한 거 있나?" · "볼트에서 찾아봐"
-
-> **Vault location:** both read `$OBSIDIAN_VAULT`, falling back to
-> `~/workspace/obsidian/MyObsidian`. Set the env var if your vault lives
-> elsewhere.
-
-### `obs-html`
-
-Writes a topic up as a **self-contained, image-rich Korean HTML document** and
-files it into your **Obsidian vault**. It always **interviews you first** (via
-`AskUserQuestion`) to pin down the **total length** and whether this is a
-**technical** or **non-technical** document, plus whatever else the topic
-genuinely hinges on. Technical docs are pitched so a **junior developer** can
-follow them; everything else is explained in plain language. The Korean reads
-naturally (no 번역투), and **every major section carries a visual** — a
-hand-drawn inline SVG diagram by default, or a properly attributed web image
-downloaded into the note's `assets/`. The HTML has **zero external
-dependencies** (no CDN, no web fonts) so it still opens years from now, offline.
-Saving is delegated to the `obs` skill, which files it as a folder-note and
-updates `Home.md`.
-
-It auto-triggers when you say things like:
-
-> "이 주제로 HTML 문서 만들어서 obs에 저장해줘" · "HTML로 정리해서 볼트에 넣어줘"
-
-Or invoke it explicitly with `/obs-html`.
-
-> Requires the `obs` skill (Obsidian vault saving) to be available.
-
-### `analyze-image`
-
-Looks at an image you want analyzed **without making you mention the
-clipboard**. When you ask Claude to look at / read / explain / debug an image,
-screenshot, screen, UI, error, or diagram — and you didn't attach a file or
-give a path — the picture is almost always on the macOS **clipboard** (you just
-hit ⌘⇧4 / ⌃⌘⇧4 or copied an image). So this skill **checks the clipboard first
-by default**, pulls whatever screenshot/picture is there into a temp PNG via
-`osascript`, reads it, and answers in Korean. If the clipboard is empty it asks
-you to capture/copy/attach an image or give a path.
-
-It auto-triggers when you say things like:
-
-> "이 이미지 분석해줘" · "이 화면 뭔지 봐줘" · "방금 캡쳐한 거 봐바" · "이 에러 화면 분석해줘"
-
-Or invoke it explicitly with `/analyze-image`.
-
-> macOS only (uses `osascript`; no extra install). The clipboard image is
-> dumped to a single fixed temp file that's overwritten on each run.
-
-## Agents
-
-### `korean-reviewer`
-
-A **Sonnet**-backed subagent that proofreads a finished **Korean document**
-(Markdown / HTML / PPTX text) for **unnatural Korean** and rewrites it into
-natural, idiomatic phrasing — catching 번역투, English-calque wording, stiff
-officialese, and mistranslated idioms (e.g. "천장을 친다" → "한계에 부딪힌다").
-It preserves meaning, structure, code, and proper nouns, fixes only what is
-clearly unnatural, and returns a concise table of every change.
-
-## Hooks
-
-A **`PostToolUse`** hook watches `Write` / `Edit` / `MultiEdit`. Right after a
-**reader-facing document** (`.md` / `.html` / `.pptx`) is written, it advises
-the main session to run the `korean-reviewer` agent on that file. It's
-**advisory only** (never blocks), skips the plugin's own internal files, and —
-when several documents are produced at once — authorizes reviewing them **in
-parallel**. So generated Korean documents get proofread automatically.
-
-## Status line (opt-in)
-
-An **animated emoji status line** lives under [`statusline/`](statusline/). The
-mascot reacts to Claude's state — **🤖↔🧠 (orange)** while Claude is working,
-**😴↔💤 (blue)** while idle — and the line also shows
-`dir | git | model | effort | context%`.
-
-Claude Code plugins **cannot** register a main `statusLine` (only your own
-`settings.json` can), so this is a **copy-in** extra rather than an
-auto-activated plugin feature: drop `statusline/claude-statusline.sh` into
-`~/.claude/`, merge `statusline/settings-snippet.json` into your
-`settings.json`, and restart. Full instructions and customization are in
-[`statusline/README.md`](statusline/README.md).
-
-## Repository layout
-
-```
-.claude-plugin/
-  plugin.json        # plugin manifest (references hooks/hooks.json)
-  marketplace.json   # marketplace entry (lets you install this repo locally)
-skills/
-  idea-refiner/
-    SKILL.md         # the skill (English instructions, Korean Q&A)
-  plan-writer/
-    SKILL.md         # 기획서 → codebase scan + interview → code-level milestone plan
-    references/
-      plan-template.md   # Korean plan-document skeleton (sections, tables, milestone anatomy)
-  tech-blog-writer/
-    SKILL.md         # the skill (English instructions, Korean output)
-    references/
-      translation-and-style.md   # natural EN→KO translation + junior-audience guide
-      html-templates.md          # standalone + CMS-fragment HTML templates
-  obs/
-    SKILL.md         # save content into the Obsidian vault as a tagged folder-note
-  obs-recall/
-    SKILL.md         # search the vault (index → tags → full text, incl. attached HTML)
-  obs-html/
-    SKILL.md         # interview → research → Korean HTML doc → save via the obs skill
-    references/
-      writing-style.md   # 번역투 blacklist + junior / non-technical audience rules
-      html-template.md   # dependency-free, light+dark HTML template & SVG figure recipes
-  analyze-image/
-    SKILL.md         # checks the macOS clipboard first when asked to analyze an image
-    grab-clipboard.sh # osascript: dump clipboard image → temp PNG (or ERR_NO_IMAGE)
-agents/
-  korean-reviewer.md # Sonnet proofreader for unnatural Korean in generated docs
-hooks/
-  hooks.json         # PostToolUse → suggest korean-reviewer after doc writes
-  scripts/
-    korean-doc-check.sh   # detects .md/.html/.pptx writes, emits the advisory
-statusline/
-  claude-statusline.sh    # opt-in animated status line (working 🤖🧠 / idle 😴💤)
-  settings-snippet.json   # statusLine + hooks block to merge into settings.json
-  README.md               # install + customization guide
-README.md
-```
-
-## Try it locally
-
-This repo doubles as its own Claude Code marketplace, so you can install it
-from disk:
+## 설치
 
 ```bash
-# inside Claude Code, from this repo:
+# 로컬 (이 리포에서)
 /plugin marketplace add ./
 /plugin install jkpark-claude-plugin@jkpark-plugins
-```
 
-Then start a session and say "이런 기능 어떨까? …" — the `idea-refiner` skill
-should load automatically. Or run `/idea-refiner` directly.
-
-## Publish
-
-Push this repo to GitHub, then anyone can install it with:
-
-```bash
-/plugin marketplace add <your-org>/jkpark-claude-plugin
+# GitHub에서
+/plugin marketplace add JKPark83/jkpark-claude-plugin
 /plugin install jkpark-claude-plugin@jkpark-plugins
 ```
