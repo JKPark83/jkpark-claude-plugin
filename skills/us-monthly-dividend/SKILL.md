@@ -33,7 +33,12 @@ portfolio that ignores what the account already holds.
   `usdkrw`), optional target monthly after-tax income, and optionally an
   explicit covered-call cap and/or ticker count. If the user states them,
   those values are final and Step 2.5 is skipped. Otherwise both are proposed
-  in Step 2.5 from market conditions. Hard guardrails that no assessment or
+  in Step 2.5 from market conditions. If the user asks for a **high-yield
+  portfolio (고배당)**, also collect a minimum portfolio TTM yield — default
+  **10%/yr** when they don't name one. A floor that high usually cannot be
+  met under a market-proposed covered-call cap, so present that conflict and
+  get explicit confirmation before raising the cap — never silently cross
+  the guardrails. Hard guardrails that no assessment or
   proposal may cross: covered-call ETFs ≤ **40%** of the portfolio, single
   ticker ≤ **40%**, ticker count 3–6.
 - **rebalance**: the new cash (KRW or USD) plus current holdings, from
@@ -135,6 +140,11 @@ within ~0.5%p), prefer the combination spanning more vehicle types (REIT /
 BDC / covered-call / dividend-growth ETF / preferred) over one concentrated
 in a single type, and say which alternative lost the tiebreak and why. Never
 pick a risk-flagged ticker (AGNC, QYLD) purely to win a yield tiebreak.
+**High-yield floor:** when Step 1 set a minimum portfolio yield (고배당
+request, default 10%/yr), only combinations whose weighted TTM yield meets
+the floor qualify. If none does within the confirmed caps, do not quietly
+drop the floor — report the closest achievable yield and which cap change
+would reach the floor, and let the user choose.
 State share counts and cost per ticker. The caps are
 hard ceilings after share rounding — if rounding pushes a ticker over a cap,
 drop one share and leave the cash uninvested. **Violation example:** 342
@@ -177,10 +187,14 @@ python3 scripts/backtest.py --weights MAIN:0.392 O:0.389 JEPQ:0.138 SCHD:0.081 -
 ```
 
 Method is fixed inside the script (yfinance split-adjusted prices plus
-as-paid dividends reinvested monthly, two tracks — 세전 gross and 세후 net
-with 15% dividend withholding, benchmarks under the same rule — monthly
-rebalance to target weights, Sharpe with rf=0, SPY + SCHD benchmarks over
-the portfolio's common history window). Rules:
+as-paid dividends, 15% withholding on all dividends, two realistic
+scenarios — **세후 재투자** (after-tax dividends reinvested monthly) and
+**배당 출금** (after-tax dividends withdrawn as cash monthly, position
+compounds on price only, reported with the average annual cash yield) —
+benchmarks under the same rules, monthly rebalance to target weights,
+Sharpe with rf=0, SPY + SCHD benchmarks over the portfolio's common
+history window). A pre-tax track is not reported — it is not achievable
+for a Korean resident. Rules:
 
 - Backtest numbers come only from the script's JSON — same data discipline
   as Step 2.

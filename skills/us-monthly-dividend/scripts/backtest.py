@@ -8,18 +8,24 @@ Usage:
 Method (fixed, no options beyond the tax rate):
 - Data: yfinance history with auto_adjust=False — split-adjusted Close plus
   the as-paid (split-adjusted) Dividends series, so dividends can be taxed
-  separately from price moves.
-- Monthly total return per ticker, dividends reinvested:
-      gross: (P_t + D_t)            / P_{t-1} - 1
-      net:   (P_t + (1-tax) * D_t)  / P_{t-1} - 1
-  where D_t = dividends paid during month t. Default tax = 0.15 (US treaty
-  withholding for a Korean resident). Both tracks are reported; benchmarks
-  get the same treatment so the comparison stays fair.
+  and withdrawn separately from price moves.
+- Two realistic scenarios per series (a pre-tax reinvest track is not
+  achievable for a Korean resident, so it is not reported):
+      net_reinvest: (P_t + (1-tax) * D_t) / P_{t-1} - 1
+          after-tax dividends reinvested monthly (compounding track)
+      withdraw:      P_t / P_{t-1} - 1
+          after-tax dividends withdrawn as cash every month; the position
+          compounds on price only. Reported alongside the withdrawn cash:
+          monthly cash yield c_t = (1-tax) * D_t / P_{t-1}, its annualized
+          average, and the total cash collected as % of the initial value
+          (each month's cash scaled by the price-only curve).
+  Default tax = 0.15 (US treaty withholding for a Korean resident).
+  Benchmarks get the same treatment so the comparison stays fair.
 - Common history: months where every portfolio ticker has data; the actual
   start date is reported so a young ticker shortening the window is visible.
 - Portfolio: rebalanced back to target weights every month
   (monthly return = sum(w_i * r_i)).
-- Metrics per series: total_return, cagr, annual_vol (monthly std *
+- Metrics per return series: total_return, cagr, annual_vol (monthly std *
   sqrt(12)), sharpe (rf=0, stated in output), mdd (on the monthly compounded
   curve), best/worst calendar year, monthly win rate.
 
@@ -66,8 +72,23 @@ def metrics(monthly: pd.Series) -> dict:
     }
 
 
-def monthly_returns(ticker: str, years: int, tax: float):
-    """(gross, net) monthly total-return Series, or None if no data."""
+def cash_stats(price_ret: pd.Series, cash_yield: pd.Series) -> dict:
+    """Stats for the withdrawn after-tax dividend cash of the withdraw track."""
+    df = pd.concat({"r": price_ret, "c": cash_yield}, axis=1).dropna()
+    if df.empty:
+        return {"error": "no overlapping months"}
+    # value factor at the START of each month on the price-only curve (V_0 = 1)
+    prev_curve = (1 + df["r"]).cumprod().shift(1).fillna(1.0)
+    total_cash = float((df["c"] * prev_curve).sum())
+    return {
+        "avg_annual_cash_yield": round(float(df["c"].mean() * 12), 4),
+        "total_cash_pct_of_initial": round(total_cash, 4),
+        "months": int(len(df)),
+    }
+
+
+def monthly_series(ticker: str, years: int, tax: float):
+    """dict of monthly Series {reinvest, price, cash} + first data date, or None."""
     try:
         h = yf.Ticker(ticker).history(period=f"{years}y", auto_adjust=False)
     except Exception:
@@ -77,12 +98,25 @@ def monthly_returns(ticker: str, years: int, tax: float):
     px = h["Close"].resample("ME").last()
     div = h["Dividends"].fillna(0).resample("ME").sum()
     prev = px.shift(1)
-    gross = ((px + div) / prev - 1).dropna()
-    net = ((px + (1 - tax) * div) / prev - 1).dropna()
-    gross.index = gross.index.tz_localize(None)
-    net.index = net.index.tz_localize(None)
+    out = {
+        "reinvest": ((px + (1 - tax) * div) / prev - 1).dropna(),
+        "price": (px / prev - 1).dropna(),
+        "cash": ((1 - tax) * div / prev).dropna(),
+    }
+    for k in out:
+        out[k].index = out[k].index.tz_localize(None)
     first = h["Close"].dropna().index[0]
-    return gross, net, pd.Timestamp(first).tz_localize(None)
+    return out, pd.Timestamp(first).tz_localize(None)
+
+
+def track_report(reinvest: pd.Series, price: pd.Series, cash: pd.Series) -> dict:
+    return {
+        "net_reinvest": metrics(reinvest),
+        "withdraw": {
+            "price_only": metrics(price),
+            "dividend_cash": cash_stats(price, cash),
+        },
+    }
 
 
 def main() -> None:
@@ -93,7 +127,7 @@ def main() -> None:
     ap.add_argument("--years", type=int, default=5)
     ap.add_argument("--benchmarks", nargs="*", default=["SPY", "SCHD"])
     ap.add_argument("--tax", type=float, default=0.15,
-                    help="withholding applied to dividends in the net track")
+                    help="withholding applied to all dividends")
     args = ap.parse_args()
 
     weights = {}
@@ -112,7 +146,7 @@ def main() -> None:
 
     series, missing = {}, []
     for t in sorted(set(weights) | set(benchmarks)):
-        r = monthly_returns(t, args.years, args.tax)
+        r = monthly_series(t, args.years, args.tax)
         if r is None:
             missing.append(t)
         else:
@@ -122,20 +156,25 @@ def main() -> None:
         sys.exit(f"no price data for portfolio ticker(s): {bad}")
 
     # common history across portfolio tickers
-    start = max(series[t][2] for t in weights)
+    start = max(series[t][1] for t in weights)
     w = pd.Series(weights)
-    gross_df = pd.DataFrame({t: series[t][0] for t in weights}).loc[start:].dropna()
-    net_df = pd.DataFrame({t: series[t][1] for t in weights}).loc[start:].dropna()
-    port_gross = (gross_df * w).sum(axis=1)
-    port_net = (net_df * w).sum(axis=1)
+
+    def port(kind: str) -> pd.Series:
+        df = pd.DataFrame({t: series[t][0][kind] for t in weights}).loc[start:].dropna()
+        return (df * w).sum(axis=1)
+
+    p_reinvest, p_price, p_cash = port("reinvest"), port("price"), port("cash")
 
     out = {
         "method": {
-            "prices": ("split-adjusted Close + as-paid dividends, reinvested "
-                       "monthly (explicit total return)"),
+            "prices": ("split-adjusted Close + as-paid dividends "
+                       "(explicit price/dividend decomposition)"),
             "dividend_tax": args.tax,
-            "tracks": {"gross": "dividends reinvested pre-tax",
-                       "net": f"dividends reinvested after {args.tax:.0%} withholding"},
+            "tracks": {
+                "net_reinvest": f"dividends reinvested monthly after {args.tax:.0%} withholding",
+                "withdraw": (f"dividends withdrawn as cash monthly after {args.tax:.0%} "
+                             "withholding; position compounds on price only"),
+            },
             "rebalance": "monthly, back to target weights",
             "risk_free_rate": 0.0,
             "requested_years": args.years,
@@ -143,11 +182,11 @@ def main() -> None:
         "weights": {t: round(v, 4) for t, v in weights.items()},
         "period": {
             "start": str(start.date()),
-            "end": str(gross_df.index[-1].date()),
+            "end": str(p_reinvest.index[-1].date()),
             "note": ("start is the first date ALL portfolio tickers have data; "
                      "a young ticker shortens the window"),
         },
-        "portfolio": {"gross": metrics(port_gross), "net": metrics(port_net)},
+        "portfolio": track_report(p_reinvest, p_price, p_cash),
         "benchmarks": {},
         "skipped_benchmarks": [b for b in benchmarks if b in missing],
     }
@@ -155,9 +194,12 @@ def main() -> None:
         if b in missing:
             continue
         # align to the portfolio's monthly index so windows match exactly
-        bg = series[b][0].reindex(port_gross.index)
-        bn = series[b][1].reindex(port_gross.index)
-        out["benchmarks"][b] = {"gross": metrics(bg), "net": metrics(bn)}
+        s = series[b][0]
+        out["benchmarks"][b] = track_report(
+            s["reinvest"].reindex(p_reinvest.index),
+            s["price"].reindex(p_reinvest.index),
+            s["cash"].reindex(p_reinvest.index),
+        )
 
     print(json.dumps(out, ensure_ascii=False, indent=2))
 

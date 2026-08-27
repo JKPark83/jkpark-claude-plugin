@@ -36,10 +36,14 @@ window, and the path to the skill's `scripts/` directory.
    - **백테스트 기간**: start–end from `period` — if shorter than requested,
      name the young ticker that shortened it (the latest-inception portfolio
      ticker) and note the comparison window is limited.
-   - **비교 표** — rows 포트폴리오/SPY/SCHD, columns: 누적수익률, CAGR,
-     연변동성, 샤프(rf=0), MDD, 월 승률 — each cell as 세전/세후 from the
-     JSON's `gross`/`net` tracks. All numbers straight from the JSON
-     (percent with 1 decimal).
+   - **비교 표 (세후 재투자)** — rows 포트폴리오/SPY/SCHD, columns:
+     누적수익률, CAGR, 연변동성, 샤프(rf=0), MDD, 월 승률 — from each
+     series' `net_reinvest`. All numbers straight from the JSON (percent
+     with 1 decimal).
+   - **배당 출금 시나리오** — one line per series from `withdraw`:
+     가격수익 CAGR (`price_only.cagr`), 가격 MDD (`price_only.mdd`),
+     연평균 세후 현금수익률 (`dividend_cash.avg_annual_cash_yield`),
+     기간 누적 현금 (`dividend_cash.total_cash_pct_of_initial`).
    - **해석 1–2줄**: how the portfolio compares to each benchmark on return
      vs risk (e.g. lower CAGR but lower drawdown, or underperforms both), and
      what the monthly-rebalance assumption means.
@@ -51,9 +55,10 @@ window, and the path to the skill's `scripts/` directory.
 
 - Every number you output must appear in the script's JSON. No estimates, no
   web lookups, no "약 X%" from memory.
-- The method is fixed (split-adjusted prices + as-paid dividends reinvested
-  monthly; two tracks — gross 세전 and net 세후 with 15% dividend
-  withholding, benchmarks under the same rule; monthly rebalance to target
-  weights, rf=0); state it briefly so the reader knows what was simulated.
-  Do not silently change the benchmarks.
+- The method is fixed (split-adjusted prices + as-paid dividends, 15%
+  withholding on all dividends; two scenarios — 세후 재투자 `net_reinvest`
+  and 배당 출금 `withdraw` (price-only compounding + monthly cash), with
+  benchmarks under the same rules; monthly rebalance to target weights,
+  rf=0); state it briefly so the reader knows what was simulated. A pre-tax
+  track is not reported. Do not silently change the benchmarks.
 - Keep the whole reply under ~30 lines; this feeds into a larger report.
