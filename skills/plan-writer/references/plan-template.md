@@ -59,7 +59,8 @@ Full tree of every planned file, one comment per non-obvious entry
 ## 1. 확정 결정 모음
 
 Every decision from the interview + research, one row each, so later sections
-never re-argue them. `(가정)` marks defaults the user deferred.
+never re-argue them. 🔶 marks a default adopted for a deferred decision;
+🔵 marks one still unanswered — both must also appear in §8.
 
 ```markdown
 ## 1. 확정 결정 모음
@@ -67,7 +68,8 @@ never re-argue them. `(가정)` marks defaults the user deferred.
 | 항목 | 확정값 | 근거 |
 |---|---|---|
 | <결정할 것> | <단일 확정값> | <사용자 답변 / 리서치 출처 링크 / 기획서 §n> |
-| <미룬 결정> | <기본값> (가정) | 사용자 보류 — 오픈 이슈 #n |
+| <미룬 결정> | <기본값> 🔶 가정 | 사용자 보류 — 오픈 이슈 #n |
+| <못 정한 것> | 🔵 오픈 질문 | <M<k> 착수 전 확인 필요 — 오픈 이슈 #n> |
 ```
 
 ## 2. 아키텍처
@@ -91,7 +93,7 @@ The core. Rules:
   ending with "기존 앱/테스트가 여전히 정상"인 상태.
 - One milestone = 반나절~수일 of work, independently verifiable, ordered by
   dependency. Half-day items may be merged; anything over ~1주 must be split.
-- Anatomy per milestone (all four parts, always):
+- Anatomy per milestone (all five parts, always):
 
 ```markdown
 ## M<k> — <이름>
@@ -110,7 +112,17 @@ The core. Rules:
 ### 완료 기준
 - <기계적으로 확인 가능한 항목: 명령 + 기대 결과, 화면 + 기대 표시>
 - <테스트: 어떤 테스트가 새로 생기고 통과해야 하는가>
+
+### 회귀 가드레일 — 깨지면 안 되는 것
+- <이 마일스톤이 건드리는 기존 동작 + 그게 살아있음을 확인하는 방법>
 ```
+
+**회귀 가드레일** is the plan-side counterpart of the 기획서's 가드레일 지표:
+what must still work *after* this milestone, and the command or screen that
+proves it. One or two lines — the existing behaviors this milestone's files
+are most likely to break, not a full regression suite. A milestone that only
+adds new files and touches nothing existing writes `없음 (신규 파일만)`; never
+leave the heading off.
 
 ## 4. 의존성 그래프 · 병렬화 지점
 
@@ -132,6 +144,9 @@ chain + "병렬화 지점 없음".
 Plan-level risks only (구현 순서·기술 선택이 무산될 수 있는 지점). Product
 risks stay in the 기획서 — don't copy them here.
 
+A 🔶 or 🔵 whose being wrong would sink a milestone belongs here *as well as*
+in §8: §8 records the gap, §5 records what it costs and how you'd absorb it.
+
 ## 6. 신규 파일 목록 (전체)
 
 Flat list of every file the milestones create, grouped by directory — the
@@ -151,8 +166,34 @@ final milestone's criterion — it is the one box that means "쓸 수 있는 상
 
 ## 8. 오픈 이슈 *(있을 때만)*
 
-Every `(가정)` the plan proceeds on — decisions the user deferred in the
-interview AND assumptions the writer had to make (unresolvable by 기획서,
-interview, or research). One entry each: what is open, the default adopted,
-and what would change in the plan if decided otherwise. Empty → omit the
-section entirely.
+Collects every 🔶 and 🔵 scattered through the document — decisions the user
+deferred, plus assumptions the writer had to make (unresolvable by 기획서,
+interview, or research). Keep the two kinds apart: a 🔶 has a default and the
+plan can proceed; a 🔵 has none and blocks a specific milestone.
+
+```markdown
+## 8. 오픈 이슈
+
+| # | 태그 | 내용 | 채택한 기본값 | 다르게 정해지면 | 언제까지 |
+|---|---|---|---|---|---|
+| 1 | 🔶 가정 | <미검증 전제> | <기본값> | <계획의 어디가 바뀌는지> | <M<k> 전> |
+| 2 | 🔵 오픈 질문 | <답이 없는 것> | — | <어느 마일스톤이 막히는지> | <M<k> 착수 전> |
+```
+
+Empty (no 🔶 and no 🔵 anywhere) → omit the section entirely, and say so in §9.
+
+## 9. 자체 점검
+
+Always last, always present — the plan's honesty report, written after
+everything else. Three lines, no padding:
+
+```markdown
+## 9. 자체 점검
+
+- **가장 불확실한 마일스톤**: <어느 M이 제일 흔들릴 것 같은지 + 왜>
+- **틀리면 계획이 무너지는 가정**: <🔶 중 파급이 큰 것 1~3개 + 각각 미리 확인할 방법>
+- **지금 당장 첫 한 걸음**: <M0의 첫 명령 또는 첫 파일 — 문서 덮자마자 할 것>
+```
+
+If the plan really has no 🔶, write `없음 — 모든 전제가 스캔/리서치/사용자
+답변으로 확정됨` on the middle line rather than inventing one to fill it.

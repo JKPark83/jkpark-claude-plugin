@@ -52,6 +52,10 @@ Korean (한국어).** Internal reasoning can be in any language.
 1. **Read the 기획서 fully.** Restate in 1–2 Korean sentences: the scope you
    will plan and what done looks like. Get confirmation only if scope is
    ambiguous; otherwise proceed.
+   **Decomposition guard:** if the scoped work would run past ~8 milestones or
+   a few weeks, say so before interviewing and propose splitting into phased
+   plan docs (`<feature>-phase1-plan-v0.1.md` now, later phases later). A
+   15-milestone document is one nobody follows past M3.
 2. **Scan the codebase in the background — don't block.** Launch **Agent**
    subagents (`subagent_type: "Explore"`, `run_in_background: true`) to map,
    for each scoped feature: what already exists (files, functions, patterns
@@ -70,8 +74,8 @@ Korean (한국어).** Internal reasoning can be in any language.
      할까요?" 강함: "리포트 캐시는 (a) SwiftData 신규 모델 (b) 기존
      WorkoutDetailStore 확장 중 어느 쪽으로 갈까요? 트레이드오프는 …"
    - Drill vague answers immediately ("빠르게요" → "몇 초/몇 ms 기준일까요?").
-   - If the user defers ("나중에 정할게"), pick a sensible default, mark it
-     `(가정)` in the decision table, and list it under 오픈 이슈.
+   - If the user defers ("나중에 정할게"), pick a sensible default, tag it
+     **🔶 가정** in the decision table, and list it under 오픈 이슈.
 4. **Research external facts in parallel — never guess.** The instant an
    answer depends on an API limit, OS behavior, library capability, pricing,
    or a formula, launch background **Agent** subagents
@@ -91,19 +95,55 @@ Korean (한국어).** Internal reasoning can be in any language.
    - Link the source 기획서 in the header; then report the saved path and
      suggest the next step (커밋 or "M0부터 시작할까요?").
 
+## Tag every gap: 🔶 가정 / 🔵 오픈 질문
+
+Same two tags `idea-refiner` uses, so a 기획서's open items carry straight into
+the plan. Tag **inline where the gap appears** — in a decision row, in a
+마일스톤's 핵심 작업, in a 완료 기준 — not only in 오픈 이슈:
+
+- **🔶 가정** — a default was adopted and the plan proceeds on it. Always name
+  the default. *(예: "🔶 가정: 캐시 TTL 24시간 — 사용자 보류, 기본값 채택")*
+- **🔵 오픈 질문** — no answer and no safe default; must be resolved before the
+  affected milestone starts. *(예: "🔵 오픈 질문: HealthKit 백그라운드 전달
+  주기 — M2 착수 전 실기기 확인 필요")*
+
+Carry the 기획서's tags forward: one you resolved in the interview becomes a
+decision row with 근거; one you couldn't stays tagged and goes to 오픈 이슈.
+Never let a tag vanish silently between 기획서 and plan — that is exactly the
+gap that bites during implementation. And never invent a path, an API limit, or
+a number to erase a tag.
+
 ## Convergence test — stop interviewing when ALL are true
 
 - The decision table (확정 결정 모음) contains **no entry that would block
-  writing code on day one** — every remaining unknown is either `(가정)` with
-  a stated default or explicitly parked in 오픈 이슈.
-- Every milestone has a goal, deliverables with **real file paths**, and a
-  완료 기준 a human or test can verify mechanically.
+  writing code on day one** — every remaining unknown is either 🔶 with a
+  stated default or 🔵 parked in 오픈 이슈 with the milestone it blocks.
+- Every milestone has a goal, deliverables with **real file paths**, a
+  완료 기준 a human or test can verify mechanically, and a 회귀 가드레일.
 - Every reuse-map row was verified against the actual repo by the scan.
 - No number, limit, or external-API fact in the plan is guessed — each is
-  user-confirmed, researched (with source), or marked `(가정)`.
+  user-confirmed, researched (with source), or tagged 🔶.
 
 If any fails, ask another batch or wait for research — don't pad the document
 with hand-waving to finish early.
+
+## Consistency pass — run once on the finished document, before saving
+
+Read it as if someone else wrote it, and fix what you find inline:
+
+- **산출물 ↔ §6 신규 파일 목록** — is §6 exactly the union of every 신설
+  산출물? A row on one side only means one of them is wrong.
+- **완료 기준 ↔ 기획서** — does every scoped 기획서 requirement land in some
+  milestone's 완료 기준? An unlanded requirement is a hole; a 완료 기준 that
+  traces back to nothing in the 기획서 is scope creep.
+- **의존성 그래프 ↔ 마일스톤 순서** — does M\<k\> depend only on milestones
+  before it? A backward edge means the ordering is wrong.
+- **결정 테이블 ↔ 본문** — is every 확정값 actually used the way the row says?
+  A decision no milestone touches was never plan-shaping — drop the row.
+- **Placeholders** — any leftover "TBD", unfilled `<...>`, or 완료 기준
+  readable two ways? Pick one reading and make it explicit.
+
+Fix the mismatches. Don't list them in the document and move on.
 
 ## Hard rules
 
@@ -146,6 +186,9 @@ let isIndoor = (workout.metadata?[HKMetadataKeyIndoorWorkout] as? Bool) ?? false
 ### 완료 기준
 - 시뮬레이터: 실내 러닝 저장 → 목록에 "실내" 배지 표시
 - `xcodebuild test` 신규 케이스 2개 포함 전체 통과
+
+### 회귀 가드레일 — 깨지면 안 되는 것
+- 기존 야외 러닝 카드/통계 수치가 그대로: `WorkoutQueryTests` 기존 케이스 전부 통과
 ````
 
 ## Style
