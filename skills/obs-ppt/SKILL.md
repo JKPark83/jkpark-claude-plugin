@@ -163,6 +163,9 @@ hook flow into an 8-slide deck with zero diagrams — the structure slide must
 be drawn as an SVG.
 
 1. **Inline SVG diagram** — the default. Self-contained, crisp at any scale.
+   Read the `svg-visuals` skill before drawing one — it fixes the palette,
+   typography, the six layout types, and the Korean label-width math that
+   keeps text inside its box.
 2. **Inline SVG chart** — for numbers. Read the `dataviz` skill before
    drawing any chart.
 3. **Web image** — only clearly reusable ones (official docs assets,

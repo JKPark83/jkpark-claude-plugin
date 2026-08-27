@@ -119,9 +119,11 @@ image-oriented queries) and confirm the source with `WebFetch`.
   into the repo's assets folder and referencing it locally (tell the user); for
   **CMS paste**, an external URL is usually fine — still attribute and respect
   the license.
-- **No good licensed image?** Don't force a copyrighted one. Insert a captioned
-  placeholder `<!-- 이미지 필요: <무엇을 보여줄지> -->` or a simple inline SVG /
-  Mermaid diagram instead.
+- **No good licensed image?** Don't force a copyrighted one. Draw an inline SVG
+  instead — read the `svg-visuals` skill first for the palette, the six layout
+  types, and the Korean label-width math. Only fall back to a captioned
+  placeholder `<!-- 이미지 필요: <무엇을 보여줄지> -->` when even a diagram
+  wouldn't say anything.
 - Aim for **roughly one strong visual per major section**. Don't pad with
   irrelevant stock photos.
 
