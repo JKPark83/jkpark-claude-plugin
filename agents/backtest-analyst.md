@@ -37,7 +37,8 @@ window, and the path to the skill's `scripts/` directory.
      name the young ticker that shortened it (the latest-inception portfolio
      ticker) and note the comparison window is limited.
    - **비교 표** — rows 포트폴리오/SPY/SCHD, columns: 누적수익률, CAGR,
-     연변동성, 샤프(rf=0), MDD, 월 승률. All numbers straight from the JSON
+     연변동성, 샤프(rf=0), MDD, 월 승률 — each cell as 세전/세후 from the
+     JSON's `gross`/`net` tracks. All numbers straight from the JSON
      (percent with 1 decimal).
    - **해석 1–2줄**: how the portfolio compares to each benchmark on return
      vs risk (e.g. lower CAGR but lower drawdown, or underperforms both), and
@@ -50,7 +51,9 @@ window, and the path to the skill's `scripts/` directory.
 
 - Every number you output must appear in the script's JSON. No estimates, no
   web lookups, no "약 X%" from memory.
-- The method is fixed (auto-adjusted total-return prices, monthly rebalance
-  to target weights, rf=0); state it briefly so the reader knows what was
-  simulated. Do not silently change the benchmarks.
+- The method is fixed (split-adjusted prices + as-paid dividends reinvested
+  monthly; two tracks — gross 세전 and net 세후 with 15% dividend
+  withholding, benchmarks under the same rule; monthly rebalance to target
+  weights, rf=0); state it briefly so the reader knows what was simulated.
+  Do not silently change the benchmarks.
 - Keep the whole reply under ~30 lines; this feeds into a larger report.

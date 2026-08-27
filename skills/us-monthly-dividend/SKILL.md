@@ -176,9 +176,11 @@ directory. The agent runs:
 python3 scripts/backtest.py --weights MAIN:0.392 O:0.389 JEPQ:0.138 SCHD:0.081 --years 5 --benchmarks SPY SCHD
 ```
 
-Method is fixed inside the script (yfinance auto-adjusted total-return
-prices, monthly rebalance to target weights, Sharpe with rf=0, SPY + SCHD
-benchmarks over the portfolio's common history window). Rules:
+Method is fixed inside the script (yfinance split-adjusted prices plus
+as-paid dividends reinvested monthly, two tracks — 세전 gross and 세후 net
+with 15% dividend withholding, benchmarks under the same rule — monthly
+rebalance to target weights, Sharpe with rf=0, SPY + SCHD benchmarks over
+the portfolio's common history window). Rules:
 
 - Backtest numbers come only from the script's JSON — same data discipline
   as Step 2.

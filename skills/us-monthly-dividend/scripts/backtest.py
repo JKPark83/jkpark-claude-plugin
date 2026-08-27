@@ -3,20 +3,25 @@
 
 Usage:
     python3 backtest.py --weights MAIN:0.392 O:0.389 JEPQ:0.138 SCHD:0.081 \
-        --years 5 --benchmarks SPY SCHD
+        --years 5 --benchmarks SPY SCHD [--tax 0.15]
 
-Method (fixed, no options):
-- Prices: yfinance download, auto_adjust=True Close (splits + dividends
-  reinvested -> total-return series).
-- Common history: rows where every portfolio ticker has data (dropna); the
-  actual start date is reported so a young ticker shortening the window is
-  visible.
-- Portfolio: month-end resample, monthly return = sum(w_i * r_i) — i.e. the
-  portfolio is rebalanced back to target weights every month.
-- Benchmarks: same month-end series, buy-and-hold single ticker.
-- Metrics per series: total_return, cagr, annual_vol (monthly std * sqrt(12)),
-  sharpe (rf=0, stated in output), mdd (on the monthly compounded curve),
-  best/worst calendar year, monthly win rate.
+Method (fixed, no options beyond the tax rate):
+- Data: yfinance history with auto_adjust=False — split-adjusted Close plus
+  the as-paid (split-adjusted) Dividends series, so dividends can be taxed
+  separately from price moves.
+- Monthly total return per ticker, dividends reinvested:
+      gross: (P_t + D_t)            / P_{t-1} - 1
+      net:   (P_t + (1-tax) * D_t)  / P_{t-1} - 1
+  where D_t = dividends paid during month t. Default tax = 0.15 (US treaty
+  withholding for a Korean resident). Both tracks are reported; benchmarks
+  get the same treatment so the comparison stays fair.
+- Common history: months where every portfolio ticker has data; the actual
+  start date is reported so a young ticker shortening the window is visible.
+- Portfolio: rebalanced back to target weights every month
+  (monthly return = sum(w_i * r_i)).
+- Metrics per series: total_return, cagr, annual_vol (monthly std *
+  sqrt(12)), sharpe (rf=0, stated in output), mdd (on the monthly compounded
+  curve), best/worst calendar year, monthly win rate.
 
 Output: single JSON object on stdout. Report numbers must come from here.
 Exit 1 with a stderr message if data cannot be fetched.
@@ -27,7 +32,6 @@ import json
 import math
 import sys
 
-import numpy as np
 import pandas as pd
 import yfinance as yf
 
@@ -46,7 +50,7 @@ def metrics(monthly: pd.Series) -> dict:
     sharpe = mean_ann / vol if vol > 0 else None
     mdd = float((curve / curve.cummax() - 1).min())
     by_year = (1 + monthly).groupby(monthly.index.year).prod() - 1
-    # partial first/last years are included as-is; label them
+    # partial first/last years are included as-is
     best_y = by_year.idxmax()
     worst_y = by_year.idxmin()
     return {
@@ -62,6 +66,25 @@ def metrics(monthly: pd.Series) -> dict:
     }
 
 
+def monthly_returns(ticker: str, years: int, tax: float):
+    """(gross, net) monthly total-return Series, or None if no data."""
+    try:
+        h = yf.Ticker(ticker).history(period=f"{years}y", auto_adjust=False)
+    except Exception:
+        return None
+    if h is None or h.empty or h["Close"].dropna().empty:
+        return None
+    px = h["Close"].resample("ME").last()
+    div = h["Dividends"].fillna(0).resample("ME").sum()
+    prev = px.shift(1)
+    gross = ((px + div) / prev - 1).dropna()
+    net = ((px + (1 - tax) * div) / prev - 1).dropna()
+    gross.index = gross.index.tz_localize(None)
+    net.index = net.index.tz_localize(None)
+    first = h["Close"].dropna().index[0]
+    return gross, net, pd.Timestamp(first).tz_localize(None)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--weights", nargs="+", required=True,
@@ -69,6 +92,8 @@ def main() -> None:
                     help="e.g. MAIN:0.392 O:0.389 JEPQ:0.138 SCHD:0.081")
     ap.add_argument("--years", type=int, default=5)
     ap.add_argument("--benchmarks", nargs="*", default=["SPY", "SCHD"])
+    ap.add_argument("--tax", type=float, default=0.15,
+                    help="withholding applied to dividends in the net track")
     args = ap.parse_args()
 
     weights = {}
@@ -84,52 +109,55 @@ def main() -> None:
     weights = {t: w / wsum for t, w in weights.items()}  # normalize
 
     benchmarks = [b.upper() for b in args.benchmarks]
-    tickers = sorted(set(weights) | set(benchmarks))
 
-    try:
-        raw = yf.download(tickers, period=f"{args.years}y", auto_adjust=True,
-                          progress=False)["Close"]
-    except Exception as e:  # network / API failure
-        sys.exit(f"price download failed: {e}")
-    if isinstance(raw, pd.Series):
-        raw = raw.to_frame(tickers[0])
-    raw = raw.dropna(how="all")
-    missing = [t for t in tickers if t not in raw.columns or raw[t].dropna().empty]
-    if any(t in missing for t in weights):
-        sys.exit(f"no price data for portfolio ticker(s): "
-                 f"{[t for t in missing if t in weights]}")
+    series, missing = {}, []
+    for t in sorted(set(weights) | set(benchmarks)):
+        r = monthly_returns(t, args.years, args.tax)
+        if r is None:
+            missing.append(t)
+        else:
+            series[t] = r
+    bad = [t for t in missing if t in weights]
+    if bad:
+        sys.exit(f"no price data for portfolio ticker(s): {bad}")
 
-    port_px = raw[list(weights)].dropna()  # common history of portfolio tickers
-    monthly_px = port_px.resample("ME").last()
-    rets = monthly_px.pct_change().dropna()
+    # common history across portfolio tickers
+    start = max(series[t][2] for t in weights)
     w = pd.Series(weights)
-    port_monthly = (rets * w).sum(axis=1)
+    gross_df = pd.DataFrame({t: series[t][0] for t in weights}).loc[start:].dropna()
+    net_df = pd.DataFrame({t: series[t][1] for t in weights}).loc[start:].dropna()
+    port_gross = (gross_df * w).sum(axis=1)
+    port_net = (net_df * w).sum(axis=1)
 
     out = {
         "method": {
-            "prices": "yfinance auto_adjust Close (total return: splits+dividends)",
+            "prices": ("split-adjusted Close + as-paid dividends, reinvested "
+                       "monthly (explicit total return)"),
+            "dividend_tax": args.tax,
+            "tracks": {"gross": "dividends reinvested pre-tax",
+                       "net": f"dividends reinvested after {args.tax:.0%} withholding"},
             "rebalance": "monthly, back to target weights",
             "risk_free_rate": 0.0,
             "requested_years": args.years,
         },
         "weights": {t: round(v, 4) for t, v in weights.items()},
         "period": {
-            "start": str(port_px.index[0].date()),
-            "end": str(port_px.index[-1].date()),
+            "start": str(start.date()),
+            "end": str(gross_df.index[-1].date()),
             "note": ("start is the first date ALL portfolio tickers have data; "
                      "a young ticker shortens the window"),
         },
-        "portfolio": metrics(port_monthly),
+        "portfolio": {"gross": metrics(port_gross), "net": metrics(port_net)},
         "benchmarks": {},
         "skipped_benchmarks": [b for b in benchmarks if b in missing],
     }
-    # benchmarks over the SAME window as the portfolio for comparability
     for b in benchmarks:
         if b in missing:
             continue
-        b_monthly = (raw[b].loc[port_px.index[0]:].resample("ME").last()
-                     .pct_change().dropna())
-        out["benchmarks"][b] = metrics(b_monthly)
+        # align to the portfolio's monthly index so windows match exactly
+        bg = series[b][0].reindex(port_gross.index)
+        bn = series[b][1].reindex(port_gross.index)
+        out["benchmarks"][b] = {"gross": metrics(bg), "net": metrics(bn)}
 
     print(json.dumps(out, ensure_ascii=False, indent=2))
 
