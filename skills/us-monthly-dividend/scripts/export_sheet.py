@@ -25,8 +25,13 @@ Input JSON schema (null = unknown, cell left blank):
   "calendar": [{"name", "months": [12 nums], "annual"}, ...],
   "calendar_total": {"months": [12 nums], "annual"},
   "cashflow": {"usd": [12], "usd_avg", "krw": [12], "krw_avg"},
+  "commentary": [{"heading": str, "body": str}, ...],   # optional
   "footnote": str
 }
+
+commentary is free-form prose: one entry per topic (시장 상황 평가,
+종목 선정 이유, 백테스트 해석, ...). body may contain newlines; each
+entry renders as a bold heading row plus a merged wrapped-text block.
 """
 import json
 import sys
@@ -47,6 +52,8 @@ GREEN = "548235"       # calendar section + header
 GREEN_LIGHT = "E2EFDA"
 ORANGE = "C55A11"      # cashflow section + header
 ORANGE_LIGHT = "FCE4D6"
+PURPLE = "7030A0"      # commentary section
+PURPLE_LIGHT = "E4DFEC"
 ZEBRA = "F2F2F2"
 GAIN_RED = "C00000"    # Korean convention: gain red, loss blue
 LOSS_BLUE = "0070C0"
@@ -244,6 +251,30 @@ def main():
             s.put(r, c, v, fmt=fmt, fg=zebra, align="right")
         s.put(r, 14, cf[avg_key], fmt=fmt, fg=ORANGE_LIGHT, bold=True,
               align="right")
+
+    # [의견]
+    if data.get("commentary"):
+        s.next()
+        s.section_row("[의견]", PURPLE)
+        for item in data["commentary"]:
+            r = s.next()
+            ws.merge_cells(start_row=r, start_column=1, end_row=r,
+                           end_column=NCOLS)
+            s.put(r, 1, item["heading"], fg=PURPLE_LIGHT, border=False,
+                  font=Font(name="Arial", size=10, bold=True))
+            body = item.get("body", "")
+            r = s.next()
+            ws.merge_cells(start_row=r, start_column=1, end_row=r,
+                           end_column=NCOLS)
+            cell = s.put(r, 1, body, border=False,
+                         font=Font(name="Arial", size=10))
+            cell.alignment = Alignment(horizontal="left", vertical="top",
+                                       wrap_text=True)
+            # merged wrapped cells don't auto-size: estimate the height
+            # (~80 chars per line across the merged width, Korean-safe)
+            lines = sum(max(1, -(-len(p) // 80))
+                        for p in body.split("\n")) or 1
+            ws.row_dimensions[r].height = lines * 15 + 6
 
     if data.get("footnote"):
         s.next()

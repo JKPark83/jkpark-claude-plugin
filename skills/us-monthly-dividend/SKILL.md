@@ -301,7 +301,8 @@ Then ask via AskUserQuestion whether to also export to Google Sheets
 the preference up front). On yes:
 
 1. Write a JSON file (schema documented at the top of
-   `scripts/export_sheet.py`) from Steps 2–5 numbers only, then build a
+   `scripts/export_sheet.py`) — numbers from Steps 2–5 only, prose in
+   `commentary` — then build a
    **styled .xlsx**:
 
    ```bash
@@ -328,6 +329,16 @@ the preference up front). On yes:
    - `[월별 배당 달력(세전 USD)]`: rows = tickers, columns = 1월…12월,연간,
      plus a 합계 row (the standard ticker × month matrix).
    - `[세후 월 현금흐름]`: USD and KRW rows across 1월…12월,월평균.
+   - `[의견]` (`commentary` in the JSON): the analyst's prose, NOT bare
+     numbers — the numeric sections stay terse, this is where the reasoning
+     lives, written long-form (each body a real paragraph, 3+ sentences).
+     Required entries in design/rebalance mode: **시장 상황 평가** (why
+     these caps/parameters), **종목 선정 이유** (per-ticker: why it made
+     the cut and what it contributes, plus rejected close alternatives),
+     **백테스트 해석** (both scenarios vs SPY/SCHD — what the numbers mean
+     for this user's goal, not just a restatement), and any 리밸런싱 판단
+     when applicable. Reuse the chat report's rationale sections, expanded
+     rather than truncated.
 2. Upload with the Google Drive MCP tool
    `mcp__claude_ai_Google_Drive__create_file` (load it via ToolSearch first
    if deferred): `title` = the report title, `base64Content` = the base64 of
