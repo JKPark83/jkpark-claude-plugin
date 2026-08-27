@@ -46,6 +46,7 @@
   <line class="d-line" x1="170" y1="64" x2="210" y2="64" marker-end="url(#d-arrow)"/>
   <line class="d-line" x1="368" y1="64" x2="403" y2="64" marker-end="url(#d-arrow)"/>
   <line class="d-line-a" x1="571" y1="64" x2="606" y2="64" marker-end="url(#d-arrow-a)"/>
+  <line class="d-flow" x1="571" y1="64" x2="606" y2="64"/>
   <line class="d-line" x1="487" y1="98" x2="487" y2="196" marker-end="url(#d-arrow)"/>
 
   <rect x="580" y="46" width="20" height="16" fill="var(--d-canvas)"/>
@@ -109,8 +110,10 @@
   <text class="d-t-code d-c" x="386" y="314">Redis</text>
 
   <line class="d-line" x1="142" y1="104" x2="142" y2="168" marker-end="url(#d-arrow)"/>
+  <line class="d-flow" x1="142" y1="104" x2="142" y2="168"/>
   <line class="d-line" x1="386" y1="104" x2="386" y2="168" marker-end="url(#d-arrow)"/>
   <line class="d-line" x1="142" y1="224" x2="142" y2="288" marker-end="url(#d-arrow)"/>
+  <line class="d-flow d-flow-2" x1="142" y1="224" x2="142" y2="288"/>
   <line class="d-dash" x1="386" y1="224" x2="386" y2="288" marker-end="url(#d-arrow)"/>
 </svg>
 <figcaption>그림 2. 서비스 구성 — 점선은 캐시 조회 — 출처: 직접 작성</figcaption>
@@ -161,6 +164,7 @@
   <text class="d-t-sm d-c" x="504" y="172">토큰 반환</text>
 
   <line class="d-line-a" x1="380" y1="220" x2="140" y2="220" marker-end="url(#d-arrow-a)"/>
+  <line class="d-flow" x1="380" y1="220" x2="140" y2="220" stroke-dasharray="8 340"/>
   <text class="d-t-sm d-c" x="260" y="212">세션 쿠키</text>
 </svg>
 <figcaption>그림 3. 토큰 발급 순서 — 출처: 직접 작성</figcaption>
@@ -304,6 +308,7 @@
   <text class="d-t-sm d-c" x="388" y="36">종료 코드 0</text>
 
   <line class="d-line-a" x1="566" y1="72" x2="606" y2="72" marker-end="url(#d-arrow-a)"/>
+  <line class="d-flow" x1="566" y1="72" x2="606" y2="72"/>
   <text class="d-t-sm d-c" x="586" y="36">검증 통과</text>
 
   <path class="d-dash" d="M487 100 V152 H91 V100" marker-end="url(#d-arrow)"/>
