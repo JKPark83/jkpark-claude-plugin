@@ -1,6 +1,6 @@
 ---
 name: us-monthly-dividend
-description: Designs and analyzes US monthly-dividend income portfolios (SCHD, JEPI, JEPQ, O, DGRO, covered-call ETFs, REITs). Covers five operations - designing a portfolio from a budget and target monthly income with a Jan-Dec dividend calendar that fills every month; rebalancing an existing account when new money is added (buy-only allocation of the new cash to underweight tickers, Swedroe 5/25 band check, sells only on explicit opt-in); analyzing existing holdings for month-by-month cash flow and coverage gaps; computing after-tax cash flow for a Korean resident (15% US withholding); and checking holdings for dividend cuts or payout anomalies. In design/rebalance mode, proposes the covered-call cap and ticker count from current market conditions (VIX, US 10Y yield + three parallel analyst subagents) with user confirmation instead of fixed defaults. Fetches dividend history, yields, and market indicators deterministically via a bundled yfinance script, saves the report to the Obsidian vault via the obs skill, and offers an optional Google Sheets export. Use when the user mentions 월배당, 배당 달력, 배당 포트폴리오, 세후 배당, 배당컷, 추가납입, 리밸런싱 - e.g. "월배당 포트폴리오 짜줘", "1000만원 추가납입하려는데 재조정해줘", "내 배당 포트폴리오 분석해줘", "세후 월 현금흐름 계산해줘", "배당컷 있는지 점검해줘", "design a monthly dividend portfolio". Not for growth-stock screening, options strategies, or Korean domestic (KOSPI) dividend stocks.
+description: Designs and analyzes US monthly-dividend income portfolios (SCHD, JEPI, JEPQ, O, DGRO, covered-call ETFs, REITs). Covers five operations - designing a portfolio from a budget and target monthly income with a Jan-Dec dividend calendar that fills every month; rebalancing an existing account when new money is added (buy-only allocation of the new cash to underweight tickers, Swedroe 5/25 band check, sells only on explicit opt-in); analyzing existing holdings for month-by-month cash flow and coverage gaps; computing after-tax cash flow for a Korean resident (15% US withholding); and checking holdings for dividend cuts or payout anomalies. In design/rebalance mode, proposes the covered-call cap and ticker count from current market conditions (VIX, US 10Y yield + three parallel analyst subagents) with user confirmation instead of fixed defaults, selects from a 17-ticker universe spanning REITs, BDCs, covered-call ETFs, preferred shares, and dividend-growth ETFs with a vehicle-type diversity tiebreak, and mandatorily backtests every proposed portfolio via the backtest-analyst agent (deterministic yfinance monthly-rebalance script, SPY and SCHD benchmarks) so the final report always contains a 구성 근거 section with per-ticker selection rationale and backtest results. Fetches dividend history, yields, and market indicators deterministically via a bundled yfinance script, saves the report to the Obsidian vault via the obs skill, and offers an optional Google Sheets export. Use when the user mentions 월배당, 배당 달력, 배당 포트폴리오, 세후 배당, 배당컷, 추가납입, 리밸런싱 - e.g. "월배당 포트폴리오 짜줘", "1000만원 추가납입하려는데 재조정해줘", "내 배당 포트폴리오 분석해줘", "세후 월 현금흐름 계산해줘", "배당컷 있는지 점검해줘", "design a monthly dividend portfolio". Not for growth-stock screening, options strategies, or Korean domestic (KOSPI) dividend stocks.
 ---
 
 # US Monthly-Dividend Portfolio
@@ -69,8 +69,10 @@ python3 scripts/fetch_dividends.py TICKER1 TICKER2 ...
 
 | Group | Tickers | Note |
 |-------|---------|------|
-| Monthly payers | JEPI JEPQ O SPHD MAIN | JEPI/JEPQ/SPHD are covered-call/enhanced-income |
-| Quarterly core | SCHD DGRO VYM | payout months come from the data, not assumption |
+| Monthly REIT/BDC | O MAIN STAG AGNC | AGNC is a high-risk mortgage REIT — say so if proposed |
+| Monthly covered-call/enhanced | JEPI JEPQ DIVO SPYI QYLD | count toward the covered-call cap; QYLD has documented NAV erosion — flag it if proposed |
+| Monthly ETFs | SPHD PFF DIA | SPHD counts toward the covered-call/enhanced cap; PFF is preferred shares |
+| Quarterly core | SCHD DGRO VYM HDV NOBL | payout months come from the data, not assumption |
 
 Rules for using the output:
 - Every number in the report (price, yield, per-month amounts, FX) comes from
@@ -128,7 +130,12 @@ N-ticker combinations that fill all 12 months, pick the highest TTM yield.
 If no N-ticker combination is feasible, try N+1 then N−1 and state the
 deviation. When Step 2.5 was skipped without user-stated values (fallback),
 prefer the smallest N that fills all 12 months; break ties toward higher
-TTM yield. State share counts and cost per ticker. The caps are
+TTM yield. **Diversity preference:** among near-tied candidates (TTM yield
+within ~0.5%p), prefer the combination spanning more vehicle types (REIT /
+BDC / covered-call / dividend-growth ETF / preferred) over one concentrated
+in a single type, and say which alternative lost the tiebreak and why. Never
+pick a risk-flagged ticker (AGNC, QYLD) purely to win a yield tiebreak.
+State share counts and cost per ticker. The caps are
 hard ceilings after share rounding — if rounding pushes a ticker over a cap,
 drop one share and leave the cash uninvested. **Violation example:** 342
 shares makes MAIN 40.04% of the portfolio — over the 40% cap; buy 341.
@@ -152,6 +159,40 @@ RePort / lazy-allocation / M1 dynamic rebalancing):
    orders that would fix it as an *option*; execute sells only when the
    user explicitly opts in. Existing positions may already break a hard
    cap — buying never fixes that, so flag it instead of selling silently.
+
+## Step 3.5 — Backtest (mandatory for design & rebalance)
+
+Whenever Step 3 produced or changed a portfolio, the proposal **must** be
+backtested before the report — a calendar that fills 12 months says nothing
+about how the combination behaved. Skip only in analyze/monitor mode (run on
+request there).
+
+Launch the plugin's **backtest-analyst** agent with: the final target
+weights as `TICKER:WEIGHT` pairs (post-rounding actual weights), the years
+window (default 5), and the absolute path to this skill's `scripts/`
+directory. The agent runs:
+
+```bash
+python3 scripts/backtest.py --weights MAIN:0.392 O:0.389 JEPQ:0.138 SCHD:0.081 --years 5 --benchmarks SPY SCHD
+```
+
+Method is fixed inside the script (yfinance auto-adjusted total-return
+prices, monthly rebalance to target weights, Sharpe with rf=0, SPY + SCHD
+benchmarks over the portfolio's common history window). Rules:
+
+- Backtest numbers come only from the script's JSON — same data discipline
+  as Step 2.
+- A young ticker shortens the common-history window; the report must state
+  the actual start date whenever it is shorter than requested.
+- The backtest never overrides Step 3's math or the caps; it informs the
+  user and feeds Step 6's 구성 근거 section. If results are clearly poor
+  (e.g. underperforms both benchmarks with deeper MDD), present the finding
+  and ask via AskUserQuestion whether to keep the proposal or re-run Step 3
+  excluding the weakest ticker — do not silently swap tickers.
+- If the script fails (network, delisted ticker), report the stderr reason
+  in the 구성 근거 section and mark the backtest 실패 — never fill in
+  numbers from memory. The pipeline continues; the backtest is mandatory to
+  *attempt*, not a gate that blocks the report.
 
 ## Step 4 — After-tax cash flow
 
@@ -192,6 +233,18 @@ Output the full report in chat using exactly these sections:
 - 지표: VIX {now} (3개월 전 {then}), 미 10년물 {now}% ({then}%)
 - 애널리스트 3인 판정 각 1줄 + 근거
 - 적용 파라미터: 커버드콜 한도 {x}%, 종목 수 {n} (사용자 확인: 제안 적용/수정)
+
+## 포트폴리오 구성 근거 (design·rebalance는 필수)
+- 종목별 선정 이유 1줄씩: 어떤 역할(월배당 채움/배당성장/커버드콜 인컴 등)로
+  뽑혔는지 + 뒷받침 숫자 (TTM 배당률, 지급월, Step 2.5 판정)
+- 탈락한 대안 조합과 탈락 사유 1줄 (다양성 타이브레이크를 적용했다면 명시)
+- **백테스트 결과** (Step 3.5, backtest-analyst 산출):
+  - 기간: {start}–{end} ({요청 N년보다 짧으면 원인 종목 명시})
+  - | 지표 | 포트폴리오 | SPY | SCHD | — 누적수익률, CAGR, 연변동성,
+    샤프(rf=0), MDD, 월 승률
+  - 해석 1–2줄 (벤치마크 대비 수익·위험 트레이드오프)
+  - 백테스트 실패 시: 실패 사유를 그대로 적고 표는 생략
+- 과거 성과는 미래 수익을 보장하지 않는다는 1줄
 
 ## 리밸런싱 내역 (rebalance만)
 - 기존 평가액, 신규 납입액, 합산 총액 (USD·KRW)
@@ -298,4 +351,6 @@ Input: "계좌에 JEPQ 20주, O 15주 있는데 1,000만원 추가납입해서 �
 → rebalance: fetch universe + holdings with `--market` → Step 2.5 proposal
 → target weights for (기존 평가액 + 1,000만원) → new cash buys the most
 underweight ticker one share at a time, no sells → 드리프트/5/25 밴드 표 →
-report + obs save → "구글시트에도 저장할까요?".
+Step 3.5 backtest-analyst on the final weights (vs SPY·SCHD) →
+report (구성 근거 + 백테스트 표 포함) + obs save → "구글시트에도
+저장할까요?".
