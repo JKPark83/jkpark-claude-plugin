@@ -1,6 +1,6 @@
 ---
 name: us-monthly-dividend
-description: Designs and analyzes US monthly-dividend income portfolios (SCHD, JEPI, JEPQ, O, DGRO, covered-call ETFs, REITs). Covers five operations - designing a portfolio from a budget and target monthly income with a Jan-Dec dividend calendar that fills every month; rebalancing an existing account when new money is added (buy-only allocation of the new cash to underweight tickers, Swedroe 5/25 band check, sells only on explicit opt-in); analyzing existing holdings for month-by-month cash flow and coverage gaps; computing after-tax cash flow for a Korean resident (15% US withholding); and checking holdings for dividend cuts or payout anomalies. In design/rebalance mode, proposes the covered-call cap and ticker count from current market conditions (VIX, US 10Y yield + three parallel analyst subagents) with user confirmation instead of fixed defaults, selects from a 17-ticker universe spanning REITs, BDCs, covered-call ETFs, preferred shares, and dividend-growth ETFs with a vehicle-type diversity tiebreak, and mandatorily backtests every proposed portfolio via the backtest-analyst agent (deterministic yfinance monthly-rebalance script, SPY and SCHD benchmarks) so the final report always contains a 구성 근거 section with per-ticker selection rationale and backtest results. Fetches dividend history, yields, and market indicators deterministically via a bundled yfinance script, saves the report to the Obsidian vault via the obs skill, and offers an optional Google Sheets export. Use when the user mentions 월배당, 배당 달력, 배당 포트폴리오, 세후 배당, 배당컷, 추가납입, 리밸런싱 - e.g. "월배당 포트폴리오 짜줘", "1000만원 추가납입하려는데 재조정해줘", "내 배당 포트폴리오 분석해줘", "세후 월 현금흐름 계산해줘", "배당컷 있는지 점검해줘", "design a monthly dividend portfolio". Not for growth-stock screening, options strategies, or Korean domestic (KOSPI) dividend stocks.
+description: Designs and analyzes US monthly-dividend income portfolios (SCHD, JEPI, JEPQ, O, DGRO, covered-call ETFs, REITs). Covers five operations - designing a portfolio from a budget and target monthly income with a Jan-Dec dividend calendar that fills every month; rebalancing an existing account when new money is added (buy-only allocation of the new cash to underweight tickers, Swedroe 5/25 band check, sells only on explicit opt-in); analyzing existing holdings for month-by-month cash flow and coverage gaps; computing after-tax cash flow for a Korean resident (15% US withholding); and checking holdings for dividend cuts or payout anomalies. In design/rebalance mode, proposes the covered-call cap and ticker count from current market conditions (VIX, US 10Y yield + three parallel analyst subagents) with user confirmation instead of fixed defaults, selects from a 29-ticker universe spanning covered-call ETFs, preferred/high-yield-credit ETFs, monthly equity-income ETFs, dividend-growth ETFs, and monthly REITs/BDCs with a vehicle-type diversity tiebreak, supports an ETF-only mode ("ETF만", "개별주 빼고") that drops individual equities and enforces vehicle-type diversity as a hard requirement, corrects the ex-date/pay-date shift that makes monthly ETFs look like they skip January, and mandatorily backtests every proposed portfolio via the backtest-analyst agent (deterministic yfinance monthly-rebalance script, SPY and SCHD benchmarks) so the final report always contains a 구성 근거 section with per-ticker selection rationale and backtest results. Fetches dividend history, yields, and market indicators deterministically via a bundled yfinance script, saves the report to the Obsidian vault via the obs skill, and offers an optional Google Sheets export. Use when the user mentions 월배당, 배당 달력, 배당 포트폴리오, 세후 배당, 배당컷, 추가납입, 리밸런싱 - e.g. "월배당 포트폴리오 짜줘", "1000만원 추가납입하려는데 재조정해줘", "내 배당 포트폴리오 분석해줘", "세후 월 현금흐름 계산해줘", "배당컷 있는지 점검해줘", "design a monthly dividend portfolio". Not for growth-stock screening, options strategies, or Korean domestic (KOSPI) dividend stocks.
 ---
 
 # US Monthly-Dividend Portfolio
@@ -38,9 +38,12 @@ portfolio that ignores what the account already holds.
   **10%/yr** when they don't name one. A floor that high usually cannot be
   met under a market-proposed covered-call cap, so present that conflict and
   get explicit confirmation before raising the cap — never silently cross
-  the guardrails. Hard guardrails that no assessment or
-  proposal may cross: covered-call ETFs ≤ **40%** of the portfolio, single
-  ticker ≤ **40%**, ticker count 3–6.
+  the guardrails. Also ask **개별주 포함 여부** (one Korean question, default
+  **포함**): ETF만 → the 개별주 group (O MAIN STAG AGNC) is dropped from the
+  Step 2 universe and Step 3's ETF-only rule applies. Words like "ETF만",
+  "개별주 빼고", "종목 말고 ETF로" set it without asking. Hard guardrails that
+  no assessment or proposal may cross: covered-call ETFs ≤ **40%** of the
+  portfolio, single ticker ≤ **40%**, ticker count 3–6.
 - **rebalance**: the new cash (KRW or USD) plus current holdings, from
   either source:
   - `TICKER shares` pairs typed by the user, or
@@ -72,12 +75,18 @@ python3 scripts/fetch_dividends.py TICKER1 TICKER2 ...
   the user named or already holds, and add `--market` (VIX and US 10Y for
   Step 2.5). Trim or extend the universe only on user request.
 
-| Group | Tickers | Note |
-|-------|---------|------|
-| Monthly REIT/BDC | O MAIN STAG AGNC | AGNC is a high-risk mortgage REIT — say so if proposed |
-| Monthly covered-call/enhanced | JEPI JEPQ DIVO SPYI QYLD | count toward the covered-call cap; QYLD has documented NAV erosion — flag it if proposed |
-| Monthly ETFs | SPHD PFF DIA | SPHD counts toward the covered-call/enhanced cap; PFF is preferred shares |
-| Quarterly core | SCHD DGRO VYM HDV NOBL | payout months come from the data, not assumption |
+| Group | Vehicle type | Tickers | Note |
+|-------|--------------|---------|------|
+| Monthly covered-call/enhanced | 커버드콜 | JEPI JEPQ DIVO SPYI QYLD XYLD QQQI GPIX GPIQ FEPI | **all count toward the covered-call cap** |
+| Monthly preferred/credit | 우선주·크레딧 | PFF PFFD PFFA USHY HYG JNK | preferred shares and high-yield bond ETFs; monthly by construction |
+| Monthly equity income | 고배당주식 | SPHD DIV SDIV PEY DIA | **SPHD also counts toward the covered-call cap** (enhanced income) |
+| Quarterly core | 배당성장 | SCHD DGRO VYM HDV NOBL | payout months come from the data, not assumption |
+| Monthly REIT/BDC | 개별주 | O MAIN AGNC | individual equities — **omitted entirely when Step 1 chose ETF-only**. STAG was dropped: it switched from monthly to quarterly in 2026 (월 $0.124 → 분기 $0.388), so it no longer fills a calendar month |
+
+Risk-flagged tickers — usable, but the report must state the flag whenever one
+is proposed, and Step 3 may never pick one purely to win a yield tiebreak:
+QYLD·XYLD·FEPI (documented NAV erosion / synthetic covered-call), SDIV (long-run
+NAV decline), PFFA (leveraged preferred), AGNC (mortgage REIT).
 
 Rules for using the output:
 - Every number in the report (price, yield, per-month amounts, FX) comes from
@@ -87,6 +96,15 @@ Rules for using the output:
 - Payout months come from `pay_months`/`by_month_ttm` only. **Violation
   example:** listing SCHD under January because "quarterly ETFs pay in
   Jan/Apr/Jul/Oct" — SCHD's data says 3/6/9/12.
+- Yahoo dates are **ex-dates, not pay dates**, so a monthly payer can show a
+  blank month. The script already corrects the unambiguous case (one empty
+  month, two payments the month before — typically a January distribution with
+  a late-December ex-date) and reports it in `calendar_adjustment`; quote that
+  note in the 참고 section whenever it is non-null. When `calendar_adjustment`
+  instead warns that a gap did **not** fit the pattern, treat the blank month
+  as unverified: check `recent` before writing "N월 미지급" into the report.
+  **Violation example:** PFF shows `by_month_ttm["1"] = 0` and the report says
+  "PFF는 1월에 지급이 없다" — PFF pays in January; its ex-date was 12월 19일.
 - If the script exits non-zero (all tickers failed), stop and report the
   stderr message; do not fall back to web estimates.
 
@@ -139,7 +157,15 @@ TTM yield. **Diversity preference:** among near-tied candidates (TTM yield
 within ~0.5%p), prefer the combination spanning more vehicle types (REIT /
 BDC / covered-call / dividend-growth ETF / preferred) over one concentrated
 in a single type, and say which alternative lost the tiebreak and why. Never
-pick a risk-flagged ticker (AGNC, QYLD) purely to win a yield tiebreak.
+pick a risk-flagged ticker (Step 2's flag list) purely to win a yield tiebreak.
+**ETF-only mode:** almost every monthly ETF fills all 12 months, so the calendar
+stops constraining the choice and plain yield-maximisation collapses onto the
+highest-yielding covered-call and leveraged products. There, vehicle-type
+diversity is a **hard requirement, not a tiebreak**: the chosen combination must
+span at least **3** of the Step 2 vehicle types (커버드콜 / 우선주·크레딧 /
+고배당주식 / 배당성장), and at most one risk-flagged ticker may appear. If no
+combination satisfies both the yield floor and the type floor, report the
+conflict and let the user choose — do not drop the type floor silently.
 **High-yield floor:** when Step 1 set a minimum portfolio yield (고배당
 request, default 10%/yr), only combinations whose weighted TTM yield meets
 the floor qualify. If none does within the confirmed caps, do not quietly
@@ -227,13 +253,16 @@ design mode.
 
 | Verdict | Condition (first match wins) |
 |---------|------------------------------|
-| REVIEW | non-covered-call: latest `recent` payment < 95% of the one before it. Covered-call (JEPI JEPQ SPHD): `ttm_dividend` < `prev_ttm_dividend × 0.90` |
+| REVIEW | non-covered-call: latest `recent` payment < 95% of the one before it. Covered-call: `ttm_dividend` < `prev_ttm_dividend × 0.90` |
 | WARN | `ttm_dividend` < `prev_ttm_dividend × 0.97` |
 | OK | otherwise |
 
-Covered-call payouts vary month to month by design — never flag them REVIEW
-on a single-payment comparison. **Violation example:** JEPI pays $0.34 after
-$0.45 the prior month → not a REVIEW; its TTM total is what counts.
+"Covered-call" here means **every ticker in Step 2's covered-call-capped
+groups** — the 커버드콜 group plus SPHD — not a shorter hardcoded list. Their
+payouts vary month to month by design, so never flag them REVIEW on a
+single-payment comparison. **Violation example:** SPYI pays $0.510 after
+$0.522 the prior month and gets REVIEW under the non-covered-call rule — wrong
+rule; SPYI is covered-call, and its TTM total (+3.6%) is what counts.
 
 ## Step 6 — Report (Korean)
 
@@ -248,7 +277,8 @@ Output the full report in chat using exactly these sections:
 ## 시장 상황 평가 (Step 2.5를 수행한 경우만)
 - 지표: VIX {now} (3개월 전 {then}), 미 10년물 {now}% ({then}%)
 - 애널리스트 3인 판정 각 1줄 + 근거
-- 적용 파라미터: 커버드콜 한도 {x}%, 종목 수 {n} (사용자 확인: 제안 적용/수정)
+- 적용 파라미터: 커버드콜 한도 {x}%, 종목 수 {n}, 개별주 포함/제외(ETF만)
+  (사용자 확인: 제안 적용/수정)
 
 ## 포트폴리오 구성 근거 (design·rebalance는 필수)
 - 종목별 선정 이유 1줄씩: 어떤 역할(월배당 채움/배당성장/커버드콜 인컴 등)로
@@ -281,6 +311,8 @@ Output the full report in chat using exactly these sections:
 
 ## 참고
 - 조회 실패 종목과 사유 (없으면 생략)
+- 배당락일 보정 (`calendar_adjustment`가 있는 종목만): 어떤 종목의 몇 월
+  지급을 어디로 옮겼는지 1줄씩 (없으면 생략)
 - 본 리포트는 {as_of} 기준 과거 배당 실적(TTM) 기반 추정이며 미래 배당을
   보장하지 않습니다. 투자 판단과 책임은 본인에게 있으며, 이 문서는 투자
   자문이 아닙니다.
@@ -373,6 +405,13 @@ Input: "SCHD 40, JEPI 30, O 20 분석해줘"
 → Step 2 fetches the 3 tickers → calendar shows 1월 합계 $4.9 (O only),
 3월 $25.0 (SCHD+JEPI+O) … → 세후 = 각 월 × 0.85, KRW 병기 → JEPI TTM 4.58 <
 4.81×0.97 → WARN → report per Step 6 → obs save.
+
+Input: "1,000만원으로 ETF만 써서 월배당 포트폴리오 짜줘"
+→ design, ETF-only (stated, so no 개별주 question) → Step 2 fetches the
+universe minus O·MAIN·AGNC with `--market` → Step 2.5 proposal → Step 3 needs
+≥3 vehicle types, so a 커버드콜+우선주+고배당주식 combination beats a pure
+high-yield covered-call stack even at a lower TTM — say so → Step 3.5 backtest
+→ report notes the 배당락일 보정 for any ETF whose January payment moved.
 
 Input: "계좌에 JEPQ 20주, O 15주 있는데 1,000만원 추가납입해서 재조정해줘"
 → rebalance: fetch universe + holdings with `--market` → Step 2.5 proposal

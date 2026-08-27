@@ -16,11 +16,19 @@ Prints a single JSON object to stdout:
       "ttm_yield_pct": 3.87,
       "pay_months": [3, 6, 9, 12],   # months with a payment in trailing 12m
       "by_month_ttm": {"1": 0.0, ... "12": 0.27},
+      "calendar_adjustment": null,   # or a note; see below
       "recent": [{"date": "2026-06-25", "amount": 0.27}, ...],  # newest last
       "error": null                  # or a message; other fields null then
     }, ...
   }
 }
+
+Yahoo dates are ex-dates, not pay dates. Many monthly ETFs (iShares, Global X,
+SPDR) pull January's distribution to a late-December ex-date, which leaves
+by_month_ttm January empty and December doubled — the fund does pay in January.
+When exactly one month is empty and the month before it holds two payments, the
+later one is moved forward and "calendar_adjustment" describes the move. Gaps
+that do not fit that pattern are left alone and only noted.
 
 With --market, adds a "market" block (values null when unavailable):
 {
@@ -54,6 +62,34 @@ def last_close(ticker_obj):
     return float(hist["Close"].iloc[-1])
 
 
+def normalize_ex_date_calendar(by_month, ttm):
+    """Shift a distribution whose ex-date landed in the prior month back onto the
+    month it is actually paid in. Returns a note, or None when nothing was moved.
+
+    Only the unambiguous case is corrected: an otherwise-monthly payer with
+    exactly one empty month whose preceding month holds two payments. A December
+    ex-date for January's distribution is the common instance."""
+    empty = [m for m in range(1, 13) if by_month[str(m)] == 0.0]
+    if len(empty) != 1:
+        return None  # 0 gaps = nothing to fix; 2+ = a genuine non-monthly payer
+    gap = empty[0]
+    prior = 12 if gap == 1 else gap - 1
+    in_prior = sorted((ts, float(a)) for ts, a in ttm.items() if ts.month == prior)
+    if len(in_prior) < 2:
+        return (
+            f"{gap}월 미지급이나 {prior}월 중복 지급이 아님 — "
+            "TTM 창 경계 효과일 수 있으니 실제 지급 이력을 확인할 것"
+        )
+    moved_ts, amount = in_prior[-1]
+    amount = round(amount, 6)
+    by_month[str(prior)] = round(by_month[str(prior)] - amount, 6)
+    by_month[str(gap)] = round(by_month[str(gap)] + amount, 6)
+    return (
+        f"{moved_ts.strftime('%Y-%m-%d')} 지급 {amount}를 "
+        f"{prior}월에서 {gap}월로 이동 (배당락일이 전월 말로 당겨진 케이스)"
+    )
+
+
 def fetch_ticker(symbol, recent_n):
     t = yf.Ticker(symbol)
     price = last_close(t)
@@ -78,6 +114,8 @@ def fetch_ticker(symbol, recent_n):
     for ts, amount in ttm.items():
         by_month[str(ts.month)] = round(by_month[str(ts.month)] + float(amount), 6)
 
+    adjustment = normalize_ex_date_calendar(by_month, ttm)
+
     ttm_total = round(float(ttm.sum()), 6)
     recent = [
         {"date": ts.strftime("%Y-%m-%d"), "amount": round(float(a), 6)}
@@ -89,8 +127,9 @@ def fetch_ticker(symbol, recent_n):
         "ttm_dividend": ttm_total,
         "prev_ttm_dividend": round(float(prev.sum()), 6),
         "ttm_yield_pct": round(ttm_total / price * 100, 2) if price else None,
-        "pay_months": sorted({ts.month for ts in ttm.index}),
+        "pay_months": sorted(m for m in range(1, 13) if by_month[str(m)] != 0.0),
         "by_month_ttm": by_month,
+        "calendar_adjustment": adjustment,
         "recent": recent,
         "error": None,
     }
