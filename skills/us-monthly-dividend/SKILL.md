@@ -265,11 +265,27 @@ the preference up front). On yes:
    report.xlsx (`base64 -i report.xlsx`), `contentMimeType` =
    `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`. The
    default conversion turns it into a Google Sheets document and **keeps the
-   xlsx styling** — relay the returned link.
-3. If openpyxl is missing, install it (`python3 -m pip install openpyxl`)
-   and retry once; if the Drive tool is unavailable or the upload fails,
-   save report.xlsx as an attachment inside the same obs folder-note folder
-   and say the Sheets upload failed — do not silently drop it.
+   xlsx styling**.
+3. **Verify before relaying the link** — retyping a long base64 string into
+   the tool parameter can silently corrupt a few characters (observed: 3
+   wrong chars in a 10KB payload → the converted sheet keeps its tab name
+   but every cell is empty). Call
+   `mcp__claude_ai_Google_Drive__read_file_content` on the new file id: if
+   the content contains the `[요약]` marker, relay the link; if it is empty,
+   trash the broken sheet (`trash_file`) and use the browser fallback below
+   instead of retrying create_file.
+4. Browser fallback (needs the claude-in-chrome tools): open
+   `https://sheets.new`, inject a bridge input via javascript_tool
+   (`document.body.appendChild(Object.assign(document.createElement('input'),{type:'file',id:'bridge'}))`),
+   locate it with `find`, load report.xlsx into it with `file_upload`, then
+   메뉴 파일 > 가져오기 — the picker lists the file if a prior drop/upload
+   reached Drive, otherwise use its 업로드 탭 — choose 스프레드시트 바꾸기 →
+   데이터 가져오기, rename the spreadsheet to the report title, and verify
+   again with read_file_content. Trash any leftover raw `.xlsx` in Drive.
+5. If openpyxl is missing, install it (`python3 -m pip install openpyxl`)
+   and retry once; if no upload path works, save report.xlsx as an
+   attachment inside the same obs folder-note folder and say the Sheets
+   upload failed — do not silently drop it.
 
 ## Worked example (abbreviated)
 
