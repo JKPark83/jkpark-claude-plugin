@@ -163,9 +163,12 @@ hook flow into an 8-slide deck with zero diagrams — the structure slide must
 be drawn as an SVG.
 
 1. **Inline SVG diagram** — the default. Self-contained, crisp at any scale.
-   Read the `svg-visuals` skill before drawing one — it fixes the palette,
-   typography, the six layout types, and the Korean label-width math that
-   keeps text inside its box.
+   Set corner radius with the SVG attribute `rx="10"`, never the CSS property
+   `rx:`. Declare `<filter>` and `<marker>` once in a single shared `<defs>`
+   for the whole document and have every figure reference it — per-figure
+   `<defs>` break cross-figure references and the shapes silently fail to
+   render. No animation. Keep Korean labels inside their boxes: Korean glyphs
+   run wider than Latin, so size boxes from the rendered label, not by eye.
 2. **Inline SVG chart** — for numbers. Read the `dataviz` skill before
    drawing any chart.
 3. **Web image** — only clearly reusable ones (official docs assets,

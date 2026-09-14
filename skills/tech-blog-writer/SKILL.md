@@ -120,8 +120,10 @@ image-oriented queries) and confirm the source with `WebFetch`.
   **CMS paste**, an external URL is usually fine — still attribute and respect
   the license.
 - **No good licensed image?** Don't force a copyrighted one. Draw an inline SVG
-  instead — read the `svg-visuals` skill first for the palette, the six layout
-  types, and the Korean label-width math. Only fall back to a captioned
+  instead — use the attribute `rx="10"` (not CSS `rx:`) for rounded corners,
+  declare `<filter>`/`<marker>` once in a shared `<defs>` the whole document
+  references, skip animation, and size boxes from the rendered Korean label
+  rather than by eye. Only fall back to a captioned
   placeholder `<!-- 이미지 필요: <무엇을 보여줄지> -->` when even a diagram
   wouldn't say anything.
 - Aim for **roughly one strong visual per major section**. Don't pad with
