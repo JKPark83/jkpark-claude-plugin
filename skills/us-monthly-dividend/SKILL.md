@@ -344,14 +344,23 @@ the preference up front). On yes:
    The script owns all styling (colored section/table headers, zebra rows,
    red-gain/blue-loss fonts, `$`/`₩`/`%` number formats — Anthropic
    xlsx-skill conventions) — never hand-build the sheet or restyle it.
-   One sheet, sections stacked under fixed markers (`[요약]`, `[보유종목]`,
-   `[월별 배당 달력(세전 USD)]`, `[세후 월 현금흐름]`) so a later rebalance
-   run can parse it back. Layout follows the user's JK 포트폴리오 sheet
-   plus common dividend trackers (Tawcan, DividendEarner):
+   One sheet, sections stacked under fixed markers (`[요약]`, `[매수 주문]`,
+   `[보유종목]`, `[월별 배당 달력(세전 USD)]`, `[세후 월 현금흐름]`) so a later
+   rebalance run can parse it back. Layout follows the user's JK 포트폴리오
+   sheet plus common dividend trackers (Tawcan, DividendEarner):
    - `[요약]`: label/value rows — 리포트 제목·기준일, 투자시작일·시작환율,
      현재환율, 환차익률·환차익금 (시작환율을 알 때만), 투자원금·투자금액,
      세전/세후 연 배당, 세후 월평균 (USD·KRW). Fresh design: 투자시작일 =
      as_of, 시작환율 = 현재환율.
+   - `[매수 주문]` (`orders` in the JSON) — **the actionable section, and the
+     reason it sits directly under 요약**: the user has to place these orders
+     by hand, so what to buy must be readable without scanning the 15-column
+     holdings table. Header
+     `종목,Ticker,기존주수,추가매수,최종주수,현재단가(USD),매수금액(USD),매수금액(KRW)`,
+     one row per ticker that gets an order, then a 합계 row (총 매수 주수와
+     금액) and an optional `note` line for leftover uninvested cash and why it
+     was left (cap collision, sub-share remainder). Omit the whole section in
+     analyze/monitor mode, where nothing is being bought.
    - `[보유종목]` — exact header, one row per ticker, then 합계(USD)/합계(KRW):
      `종목,Ticker,목표비중(%),밴드하한(%),밴드상한(%),평단(USD),주수,매입금액(USD),현재단가(USD),평가금액(USD),수익금(USD),수익률(%),현재비중(%),TTM배당률(%),리밸런싱주수`
      주수 is always the **final** share count; 리밸런싱주수 holds this

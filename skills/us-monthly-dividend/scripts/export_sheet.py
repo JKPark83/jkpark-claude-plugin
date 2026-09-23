@@ -16,6 +16,12 @@ Input JSON schema (null = unknown, cell left blank):
   "title": str,
   "summary": [{"label": str, "value": str|num, "fmt":
                "text"|"usd"|"krw"|"pct"|"fx"|"int"}, ...],
+  "orders": {                                           # optional
+    "rows": [{"name","ticker","held","buy","final","price",
+              "amount_usd","amount_krw"}, ...],
+    "total": {"buy","amount_usd","amount_krw"},
+    "note": str|null
+  },
   "holdings": [{"name","ticker","target_pct","band_lo","band_hi",
                 "avg_cost","shares","cost_usd","price","value_usd",
                 "gain_usd","gain_pct","weight_pct","ttm_yield",
@@ -54,6 +60,8 @@ ORANGE = "C55A11"      # cashflow section + header
 ORANGE_LIGHT = "FCE4D6"
 PURPLE = "7030A0"      # commentary section
 PURPLE_LIGHT = "E4DFEC"
+TEAL = "007A6C"        # buy-order section (the actionable part)
+TEAL_LIGHT = "D9EDE9"
 ZEBRA = "F2F2F2"
 GAIN_RED = "C00000"    # Korean convention: gain red, loss blue
 LOSS_BLUE = "0070C0"
@@ -166,6 +174,42 @@ def main():
         s.put(r, 2, item["value"], fmt=None if fmt == "text" else fmt,
               fg=zebra, align="left" if fmt == "text" else "right")
     s.next()
+
+    # [매수 주문] — what to actually do, before the state tables
+    orders = data.get("orders")
+    if orders:
+        s.section_row("[매수 주문]", TEAL)
+        s.header_row(["종목", "Ticker", "기존주수", "추가매수", "최종주수",
+                      "현재단가(USD)", "매수금액(USD)", "매수금액(KRW)"], TEAL)
+        for i, o in enumerate(orders["rows"]):
+            r = s.next()
+            zebra = ZEBRA if i % 2 else None
+            s.put(r, 1, o["name"], fg=zebra)
+            s.put(r, 2, o["ticker"], fg=zebra, align="center", bold=True)
+            s.put(r, 3, o.get("held"), fmt="int", fg=zebra, align="right")
+            s.put(r, 4, o.get("buy"), fmt="int", fg=zebra, align="right",
+                  font=signed_font(o.get("buy"), bold=True))
+            for c, key, fmt in ((5, "final", "int"), (6, "price", "usd"),
+                                (7, "amount_usd", "usd"),
+                                (8, "amount_krw", "krw")):
+                s.put(r, c, o.get(key), fmt=fmt, fg=zebra, align="right")
+        ot = orders.get("total", {})
+        r = s.next()
+        s.put(r, 1, "합계", fg=TEAL_LIGHT, bold=True)
+        for c in range(2, 9):
+            s.put(r, c, None, fg=TEAL_LIGHT)
+        s.put(r, 4, ot.get("buy"), fmt="int", fg=TEAL_LIGHT, bold=True,
+              align="right")
+        s.put(r, 7, ot.get("amount_usd"), fmt="usd", fg=TEAL_LIGHT, bold=True,
+              align="right")
+        s.put(r, 8, ot.get("amount_krw"), fmt="krw", fg=TEAL_LIGHT, bold=True,
+              align="right")
+        if orders.get("note"):
+            r = s.next()
+            ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
+            s.put(r, 1, orders["note"], border=False,
+                  font=Font(name="Arial", size=9, italic=True, color=GRAY))
+        s.next()
 
     # [보유종목]
     s.section_row("[보유종목]", NAVY)
