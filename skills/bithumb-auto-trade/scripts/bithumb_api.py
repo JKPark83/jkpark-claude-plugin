@@ -102,7 +102,8 @@ def cmd_order(args):
                "the user explicitly approved this exact order.")
     if args.side not in ("bid", "ask"):
         die(1, "--side must be bid (buy) or ask (sell)")
-    params = {"market": args.market, "side": args.side, "ord_type": args.ord_type}
+    # Body field is order_type; the pre-rename ord_type gets a bare HTTP 400.
+    params = {"market": args.market, "side": args.side, "order_type": args.ord_type}
     if args.ord_type == "limit":
         if not args.price or not args.volume:
             die(1, "limit order needs --price and --volume")

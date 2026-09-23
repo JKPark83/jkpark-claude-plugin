@@ -30,7 +30,7 @@ scripts.
 | Ticker | `GET /v1/ticker?markets=KRW-BTC,KRW-ETH` |
 | Balances | `GET /v1/accounts` (private) |
 | Order constraints | `GET /v1/orders/chance?market=` (private) — `bid_fee`/`ask_fee`, `market.bid.min_total` (min order KRW), `market.max_total` |
-| Place order | `POST /v2/orders` (private) — `market`, `side` (`bid`/`ask`), `ord_type` (`limit`: price+volume / `price`: market BUY with total KRW / `market`: market SELL with volume) |
+| Place order | `POST /v2/orders` (private) — `market`, `side` (`bid`/`ask`), `order_type` (`limit`: price+volume / `price`: market BUY with total KRW / `market`: market SELL with volume) |
 | Cancel | `DELETE /v2/order?order_id=` (private) |
 | Order status | `GET /v1/order?uuid=` (private) — `state`: wait/watch/done/cancel |
 
@@ -40,14 +40,22 @@ scripts.
 - The scripts sleep 0.12s between candle pages; the live loop makes only a
   handful of calls per cycle, so limits are never a concern in normal use.
 
+## Order body naming — the `ord_type` trap
+
+`POST /v2/orders` takes **`order_type`**; the docs list it as "구 `ord_type`".
+Sending the old name returns a bare `HTTP 400 {"error":{"name":"4XX",
+"message":"Invalid request"}}` that names no field, so this failure is easy to
+misdiagnose as an auth or amount problem. Confusingly, `GET /v1/order` still
+*returns* `ord_type` in its response — only the POST body was renamed.
+
 ## Unverified items — check live, never assume
 
-- Actual account fee rate: docs show 0.25% examples but Bithumb has run 0.04%
-  base fees; ALWAYS read the real `bid_fee`/`ask_fee` from `/v1/orders/chance`
-  before the first order and update the spec's `fee_pct` if it differs.
+- Actual account fee rate: `strategy-spec.md` defaults `fee_pct` to 0.04, but a
+  live account read on 2026-08-28 returned `bid_fee`/`ask_fee` = `"0.0025"`
+  (0.25% per side) — 6x the default, enough to flip a backtest verdict. ALWAYS
+  read the real rate from `/v1/orders/chance` before the first order and update
+  the spec's `fee_pct` if it differs.
 - Minimum order amount varies per market — read `market.bid.min_total` from
   the same call (commonly around 5,000 KRW).
-- Orders may require an `stp_type` (self-trade prevention) field per a 2026
-  changelog note. The script does not send it; if `POST /v2/orders` returns an
-  error naming `stp_type`, add it to the params in `cmd_order` per the error
-  message and the current official docs.
+- `stp_type` (self-trade prevention) is NOT a request parameter — it comes back
+  in the order response (default `cancel_taker`). Do not add it to `cmd_order`.
