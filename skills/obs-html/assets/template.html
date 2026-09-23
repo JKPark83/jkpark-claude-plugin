@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<!--
+  obs-html 기본 템플릿 — 복사해서 {{…}}와 "예시" 블록을 실제 내용으로 바꾼다.
+  - 외부 리소스 0개 (오프라인 볼트). 폰트는 시스템 폰트만.
+  - JS는 점진적 향상: 스크립트가 막혀도(HTML 뷰어 플러그인의 제한 모드 등) 모든 내용이 읽힌다.
+  - 쓰지 않는 컴포넌트의 CSS·JS는 지워도 되지만, :root 토큰과 .dg 다이어그램 클래스는 남긴다.
+  디자인 원칙 출처: cathrynlavery/diagram-design (MIT), nicobailon/visual-explainer (MIT),
+  anthropics/skills frontend-design (Apache-2.0) — references/CREDITS.md 참조.
+-->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTTP 캐시, 한 번에 이해하기</title>
+<meta name="description" content="브라우저·CDN·서버가 응답을 재사용하는 방식과 설정할 때 흔히 하는 실수">
+<script>document.documentElement.classList.add('js')</script>
+<style>
+/* ── 토큰 ───────────────────────────────────────────── */
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --paper: #f5f6f8;          /* 콜아웃·코드·표 머리 */
+  --surface: #ffffff;        /* 다이어그램 박스 채움 */
+  --ink: #1b1f24;
+  --soft: #3f4650;
+  --muted: #69707a;
+  --rule: #dfe2e6;
+  --accent: #2f6feb;         /* 강조는 이 한 색뿐 — 그림당 1~2곳 */
+  --accent-tint: #e8f0fe;
+  --ext: #0f766e;            /* 다이어그램의 외부 호출 선 */
+  --warn: #b4540a;
+  --good: #1a7f3c;
+  --sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "D2Coding", monospace;
+  --measure: 720px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15171b;
+    --paper: #1e2126;
+    --surface: #1b1e23;
+    --ink: #e6e8eb;
+    --soft: #c2c7ce;
+    --muted: #8f96a0;
+    --rule: #33383f;
+    --accent: #6f9dff;
+    --accent-tint: #1f2b44;
+    --ext: #4fb7aa;
+    --warn: #f0a15c;
+    --good: #5cc98a;
+  }
+}
+
+/* ── 기본 ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 17px/1.75 var(--sans);
+  word-break: keep-all; overflow-wrap: break-word;
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+a { color: var(--accent); text-underline-offset: .2em; }
+h1, h2, h3 { line-height: 1.35; letter-spacing: -.015em; }
+h1 { font-size: 2.1rem; margin: 0 0 .5rem; }
+h2 { font-size: 1.45rem; margin: 3.2rem 0 1rem; scroll-margin-top: 4.5rem; }
+h3 { font-size: 1.15rem; margin: 2.2rem 0 .6rem; scroll-margin-top: 4.5rem; }
+p, ul, ol { margin: 0 0 1.1rem; }
+li + li { margin-top: .3rem; }
+strong { font-weight: 650; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 2.5rem 0; }
+
+/* ── 레이아웃: 1열 → 넓은 화면에서 목차 사이드바 ───────── */
+.page { max-width: var(--measure); margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+.page > *, main > * { min-width: 0; }
+.dek { font-size: 1.15rem; color: var(--muted); margin: 0 0 .4rem; }
+.meta { font-size: .85rem; color: var(--muted); margin: 0 0 2rem; }
+
+/* 목차 — 섹션이 4개 이상일 때만 넣는다 */
+.toc { font-size: .88rem; }
+.toc ul { list-style: none; margin: 0; padding: 0; }
+.toc li + li { margin-top: 0; }
+.toc a { display: block; color: var(--muted); text-decoration: none; padding: .3rem .75rem; border-left: 2px solid transparent; }
+.toc a:hover { color: var(--ink); }
+.toc a[aria-current="true"] { color: var(--ink); border-left-color: var(--accent); font-weight: 600; }
+.toc-title { font-size: .8rem; font-weight: 600; color: var(--muted); margin: 0 0 .5rem .75rem; }
+
+@media (min-width: 1100px) {
+  .page.has-toc {
+    max-width: calc(var(--measure) + 260px); display: grid;
+    grid-template-columns: 200px minmax(0, var(--measure)); column-gap: 60px;
+  }
+  .page.has-toc > header { grid-column: 2; }
+  .page.has-toc > .toc { grid-column: 1; grid-row: 1 / span 2; }
+  .page.has-toc > main { grid-column: 2; }
+  .toc nav { position: sticky; top: 2rem; }
+}
+@media (max-width: 1099px) {
+  /* 좁은 화면: 위에 붙는 가로 스크롤 바 */
+  .toc {
+    position: sticky; top: 0; z-index: 5; margin: 0 -1.25rem 1.5rem;
+    background: var(--bg); border-bottom: 1px solid var(--rule);
+  }
+  .toc-title { display: none; }
+  .toc ul { display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 .75rem; }
+  .toc ul::-webkit-scrollbar { display: none; }
+  .toc a { white-space: nowrap; border-left: 0; border-bottom: 2px solid transparent; padding: .7rem .6rem; }
+  .toc a[aria-current="true"] { border-bottom-color: var(--accent); }
+}
+@media (max-width: 600px) {
+  body { font-size: 16px; }
+  h1 { font-size: 1.7rem; }
+  h2 { font-size: 1.3rem; margin-top: 2.6rem; }
+  .page { padding-top: 2rem; }
+}
+
+/* ── 요약·콜아웃 ────────────────────────────────────── */
+.tldr { border-left: 3px solid var(--accent); padding: .2rem 0 .2rem 1.1rem; margin: 0 0 2.5rem; }
+.tldr > b { display: block; font-size: .9rem; color: var(--muted); margin-bottom: .3rem; }
+.tldr ul { margin: 0; padding-left: 1.1rem; }
+.note { background: var(--paper); border-radius: 6px; padding: .9rem 1.1rem; margin: 1.6rem 0; font-size: .96rem; }
+.note > b:first-child { display: block; margin-bottom: .2rem; }
+.note.warn > b:first-child { color: var(--warn); }
+.note.tip > b:first-child { color: var(--good); }
+.note > :last-child { margin-bottom: 0; }
+
+/* ── 코드·표 ─────────────────────────────────────────── */
+code, pre { font-family: var(--mono); }
+:not(pre) > code { background: var(--paper); padding: .12em .38em; border-radius: 4px; font-size: .88em; }
+pre { position: relative; background: var(--paper); border-radius: 6px; padding: 1rem 1.1rem; overflow-x: auto; font-size: .86rem; line-height: 1.6; margin: 0 0 1.4rem; }
+pre .copy {
+  position: absolute; top: .45rem; right: .45rem; font: 600 .75rem var(--sans);
+  color: var(--muted); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: .15rem .5rem; cursor: pointer;
+}
+.table-wrap { overflow-x: auto; margin: 0 0 1.4rem; }
+table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+th, td { border-bottom: 1px solid var(--rule); padding: .55rem .7rem; text-align: left; vertical-align: top; }
+th { font-weight: 600; background: var(--paper); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── 그림 ────────────────────────────────────────────── */
+figure { margin: 2.2rem 0; }
+figure img { display: block; max-width: 100%; height: auto; margin: 0 auto; border-radius: 6px; }
+figure > svg, .fig-scroll > svg { display: block; width: 100%; height: auto; }
+figcaption { font-size: .86rem; color: var(--muted); margin-top: .8rem; line-height: 1.6; }
+figcaption b { color: var(--ink); font-weight: 600; }
+/* 넓은 그림 ↔ 세로 그림 전환 (핵심 그림) */
+.fig-narrow { display: none; }
+@media (max-width: 600px) { .fig-wide { display: none; } .fig-narrow { display: block; } }
+/* 좁은 화면에서 가로 스크롤 (보조 그림) — 글자가 11px 밑으로 줄지 않게 */
+.fig-scroll { overflow-x: auto; }
+.fig-scroll > svg { min-width: 640px; }
+
+/* 다이어그램 클래스 — references/diagram-design.md §3 */
+.dg { font-family: var(--sans); --fig-bg: var(--bg); }
+.dg text { fill: var(--ink); }
+.dg .t { font-size: 13px; font-weight: 600; }
+.dg .t-sub { font-size: 12px; fill: var(--muted); }
+.dg .t-tag { font-size: 10px; letter-spacing: .02em; font-weight: 600; fill: var(--muted); }
+.dg .t-edge { font-size: 12px; fill: var(--soft); }
+.dg .t-zone { font-size: 12px; font-weight: 600; fill: var(--muted); }
+.dg .mono { font-family: var(--mono); }
+.dg .c { text-anchor: middle; }
+.dg .end { text-anchor: end; }
+.dg .n-focal { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 1.5; }
+.dg .n-step  { fill: var(--surface); stroke: var(--ink); stroke-width: 1; }
+.dg .n-store { fill: color-mix(in srgb, var(--ink) 5%, var(--surface)); stroke: var(--muted); stroke-width: 1; }
+.dg .n-ext   { fill: color-mix(in srgb, var(--ink) 3%, var(--surface)); stroke: color-mix(in srgb, var(--ink) 30%, transparent); stroke-width: 1; }
+.dg .n-input { fill: color-mix(in srgb, var(--muted) 10%, var(--surface)); stroke: var(--soft); stroke-width: 1; }
+.dg .n-opt   { fill: color-mix(in srgb, var(--ink) 2%, var(--surface)); stroke: color-mix(in srgb, var(--ink) 20%, transparent); stroke-width: 1; stroke-dasharray: 4 3; }
+.dg .n-zone  { fill: color-mix(in srgb, var(--ink) 2%, transparent); stroke: var(--rule); stroke-width: 1; stroke-dasharray: 4 4; }
+.dg .e       { fill: none; stroke: var(--muted); stroke-width: 1.25; }
+.dg .e-focal { fill: none; stroke: var(--accent); stroke-width: 1.75; }
+.dg .e-link  { fill: none; stroke: var(--ext); stroke-width: 1.25; }
+.dg .e-dash  { stroke-dasharray: 5 4; }
+.dg .life    { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 3 4; }
+.dg .mask    { fill: var(--fig-bg); }
+.dg .arr     { fill: var(--muted); }
+.dg .arr-a   { fill: var(--accent); }
+.dg .arr-l   { fill: var(--ext); }
+
+/* ── 단계 넘김 그림 ──────────────────────────────────── */
+.dg [data-step] { transition: opacity .25s; }
+.dg .is-past { opacity: .35; }
+.dg .is-future { opacity: 0; }
+.step-bar { display: none; }
+.js .step-bar { display: flex; align-items: center; gap: .5rem; margin-top: .8rem; }
+.step-count { font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: center; }
+.step-notes { margin: .6rem 0 0; font-size: .95rem; }
+.js .step-notes { list-style: none; padding: 0; min-height: 3.5em; }
+button.btn {
+  font: 600 .85rem var(--sans); color: var(--ink); background: var(--bg);
+  border: 1px solid var(--rule); border-radius: 6px; padding: .35rem .8rem; cursor: pointer;
+}
+button.btn:hover:not(:disabled) { border-color: var(--muted); }
+button.btn:disabled { opacity: .4; cursor: default; }
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── 탭 ──────────────────────────────────────────────── */
+.tabs { margin: 1.6rem 0; }
+.tab-title { font-size: .9rem; margin: 1.2rem 0 .4rem; color: var(--muted); }
+.tablist { display: flex; gap: .25rem; border-bottom: 1px solid var(--rule); margin-bottom: 1rem; overflow-x: auto; }
+.tablist button {
+  font: 600 .9rem var(--sans); color: var(--muted); background: none; border: 0;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; padding: .5rem .8rem; cursor: pointer; white-space: nowrap;
+}
+.tablist button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+/* ── 전/후 비교 ──────────────────────────────────────── */
+.compare { display: grid; grid-template-columns: 1fr; gap: 1rem; margin: 1.6rem 0; }
+@media (min-width: 768px) { .compare { grid-template-columns: 1fr 1fr; } }
+.compare > div { min-width: 0; border: 1px solid var(--rule); border-radius: 6px; padding: .9rem 1rem; }
+.compare h4 { margin: 0 0 .5rem; font-size: .9rem; }
+.compare .before h4 { color: var(--warn); }
+.compare .after h4 { color: var(--good); }
+.compare pre { margin: 0 0 .6rem; }
+.compare p { font-size: .93rem; margin: 0; }
+
+/* ── 접기 ────────────────────────────────────────────── */
+details.more { border: 1px solid var(--rule); border-radius: 6px; margin: 1.4rem 0; }
+details.more > summary { cursor: pointer; font-weight: 600; padding: .7rem 1rem; list-style: none; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::before { content: "▸"; display: inline-block; width: 1.1em; color: var(--muted); transition: transform .15s; }
+details.more[open] > summary::before { transform: rotate(90deg); }
+details.more > .body { padding: 0 1rem .9rem 2.1rem; }
+details.more > .body > :last-child { margin-bottom: 0; }
+
+/* ── HTML 막대 차트 — 화면 폭이 바뀌어도 글자 크기가 그대로 ── */
+.bars { margin: 0; padding: 0; list-style: none; display: grid; gap: .55rem; }
+.bars li { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); align-items: center; gap: .8rem; margin: 0; font-size: .9rem; }
+.bars .label { text-align: right; color: var(--soft); }
+.bars .track { display: flex; align-items: center; gap: .5rem; }
+.bars .bar { height: 1.4rem; border-radius: 3px; background: color-mix(in srgb, var(--muted) 38%, transparent); width: var(--v); }
+.bars .bar.a { background: var(--accent); }
+.bars .val { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) { .bars li { grid-template-columns: 5.5em minmax(0, 1fr); } }
+
+/* ── 툴팁 ([data-tip] → .tooltip) ───────────────────────────────── */
+[data-tip] { cursor: help; }
+.tooltip {
+  position: fixed; z-index: 20; max-width: 260px; pointer-events: none;
+  background: var(--ink); color: var(--bg); font-size: .8rem; line-height: 1.5;
+  padding: .4rem .6rem; border-radius: 4px; transform: translate(-50%, calc(-100% - 8px));
+}
+
+/* ── 인쇄: 접힌 것·숨긴 탭을 모두 펼친다 ─────────────── */
+@media print {
+  .toc, .step-bar, .tablist, pre .copy { display: none !important; }
+  .tab[hidden], .tab-title[hidden], .step-notes li[hidden] { display: block !important; }
+  .dg .is-future, .dg .is-past { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .dg [data-step], details.more > summary::before { transition: none; } }
+</style>
+</head>
+<body>
+<div class="page has-toc">
+
+<header>
+  <h1>HTTP 캐시, 한 번에 이해하기</h1>
+  <p class="dek">같은 파일을 두 번 받지 않게 해 주는 장치 — 어디에 저장되고, 언제 다시 묻는지</p>
+  <p class="meta">2026년 9월 24일 작성</p>
+</header>
+
+<aside class="toc">
+  <nav aria-label="목차">
+    <p class="toc-title">목차</p>
+    <ul>
+      <li><a href="#why">왜 캐시인가</a></li>
+      <li><a href="#flow">요청이 흐르는 길</a></li>
+      <li><a href="#revalidate">재검증</a></li>
+      <li><a href="#config">설정 예시</a></li>
+      <li><a href="#pitfalls">흔한 실수</a></li>
+      <li><a href="#refs">참고 자료</a></li>
+    </ul>
+  </nav>
+</aside>
+
+<main>
+  <div class="tldr">
+    <b>핵심 요약</b>
+    <ul>
+      <li>캐시는 브라우저와 CDN 두 곳에 있고, 가까운 쪽이 먼저 답한다.</li>
+      <li>유효 기간이 지나도 파일이 그대로면 서버는 본문 없이 <code>304</code>만 돌려준다.</li>
+      <li>파일 이름에 해시를 붙이면 기간을 1년으로 잡아도 안전하다.</li>
+    </ul>
+  </div>
+
+  <h2 id="why">왜 캐시인가</h2>
+  <p>예시 본문이다. 문단은 3~5문장, 한 줄은 한글 40자 안팎이 읽기 편하다. 본문 폭(<code>--measure</code>)을 넓히지 않는다.</p>
+
+  <!-- 예시: HTML 막대 차트 + 툴팁. 단순 비교 차트는 SVG보다 이쪽이 모바일에서 잘 읽힌다 -->
+  <figure>
+    <ul class="bars" aria-label="응답 경로별 응답 시간">
+      <li><span class="label">캐시 적중</span><span class="track"><span class="bar a" style="--v: 6.7%" data-tip="CDN 엣지에서 바로 응답" tabindex="0"></span><span class="val">12ms</span></span></li>
+      <li><span class="label">재검증 (304)</span><span class="track"><span class="bar" style="--v: 26.7%" data-tip="본문 없이 헤더만 왕복" tabindex="0"></span><span class="val">48ms</span></span></li>
+      <li><span class="label">원본 조회</span><span class="track"><span class="bar" style="--v: 85%" data-tip="원본 서버까지 가서 본문 전체를 받아 옴" tabindex="0"></span><span class="val">180ms</span></span></li>
+    </ul>
+    <figcaption><b>그림 1.</b> 캐시가 맞으면 원본 조회보다 열 배 이상 빠르다 (예시 수치) — 출처: 직접 작성</figcaption>
+  </figure>
+
+  <h2 id="flow">요청이 흐르는 길</h2>
+  <p>예시 본문.</p>
+
+  <!-- 예시: 핵심 그림은 넓은 판(760) + 세로 판(360)을 둘 다 그려 화면 폭에 따라 바꾼다 -->
+  <figure>
+    <svg class="dg fig-wide" viewBox="0 0 760 184" role="img" aria-labelledby="f2-title f2-desc">
+      <title id="f2-title">요청 처리 흐름</title>
+      <desc id="f2-desc">브라우저 요청은 CDN에 먼저 닿는다. CDN에 사본이 있으면 거기서 바로 응답하고, 없을 때만 API 서버와 DB까지 간다.</desc>
+      <defs>
+        <marker id="f2-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arr" d="M0,1 L10,5 L0,9 z"/></marker>
+        <marker id="f2-arr-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arr-a" d="M0,1 L10,5 L0,9 z"/></marker>
+      </defs>
+      <!-- 선 -->
+      <path class="e" d="M136,70 H222" marker-end="url(#f2-arr)"/>
+      <path class="e e-dash" d="M336,70 H422" marker-end="url(#f2-arr)"/>
+      <path class="e" d="M536,70 H622" marker-end="url(#f2-arr)"/>
+      <path class="e-focal e-dash" d="M280,100 V132 Q280,140 272,140 H88 Q80,140 80,132 V102" marker-end="url(#f2-arr-a)"/>
+      <!-- 라벨 (마스크 → 글자) -->
+      <rect class="mask" x="340" y="46" width="80" height="16"/>
+      <text class="t-edge c" x="380" y="58">캐시 없을 때</text>
+      <rect class="mask" x="124" y="148" width="112" height="16"/>
+      <text class="t-edge c" x="180" y="160">적중 시 바로 응답</text>
+      <!-- 노드 -->
+      <rect class="n-input" x="24" y="40" width="112" height="60" rx="6"/>
+      <text class="t c" x="80" y="66">브라우저</text><text class="t-sub c" x="80" y="84">사용자</text>
+      <rect class="n-focal" x="224" y="40" width="112" height="60" rx="6"/>
+      <text class="t c" x="280" y="66">CDN</text><text class="t-sub c" x="280" y="84">엣지 캐시</text>
+      <rect class="n-step" x="424" y="40" width="112" height="60" rx="6"/>
+      <text class="t c" x="480" y="66">API 서버</text><text class="t-sub c mono" x="480" y="84">/api/v1</text>
+      <rect class="n-store" x="624" y="40" width="112" height="60" rx="6"/>
+      <text class="t c" x="680" y="66">DB</text><text class="t-sub c" x="680" y="84">원본 데이터</text>
+    </svg>
+    <svg class="dg fig-narrow" viewBox="0 0 360 416" role="img" aria-labelledby="f2n-title f2n-desc">
+      <title id="f2n-title">요청 처리 흐름 (세로)</title>
+      <desc id="f2n-desc">브라우저 요청은 CDN에 먼저 닿는다. CDN에 사본이 있으면 거기서 바로 응답하고, 없을 때만 API 서버와 DB까지 간다.</desc>
+      <defs>
+        <marker id="f2n-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arr" d="M0,1 L10,5 L0,9 z"/></marker>
+        <marker id="f2n-arr-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arr-a" d="M0,1 L10,5 L0,9 z"/></marker>
+      </defs>
+      <path class="e" d="M220,76 V122" marker-end="url(#f2n-arr)"/>
+      <path class="e e-dash" d="M220,184 V230" marker-end="url(#f2n-arr)"/>
+      <path class="e" d="M220,292 V338" marker-end="url(#f2n-arr)"/>
+      <path class="e-focal e-dash" d="M140,154 H128 Q120,154 120,146 V54 Q120,46 128,46 H138" marker-end="url(#f2n-arr-a)"/>
+      <rect class="mask" x="226" y="199" width="80" height="16"/>
+      <text class="t-edge" x="230" y="211">캐시 없을 때</text>
+      <rect class="mask" x="0" y="92" width="112" height="16"/>
+      <text class="t-edge end" x="108" y="104">적중 시 바로 응답</text>
+      <rect class="n-input" x="140" y="16" width="160" height="60" rx="6"/>
+      <text class="t c" x="220" y="42">브라우저</text><text class="t-sub c" x="220" y="60">사용자</text>
+      <rect class="n-focal" x="140" y="124" width="160" height="60" rx="6"/>
+      <text class="t c" x="220" y="150">CDN</text><text class="t-sub c" x="220" y="168">엣지 캐시</text>
+      <rect class="n-step" x="140" y="232" width="160" height="60" rx="6"/>
+      <text class="t c" x="220" y="258">API 서버</text><text class="t-sub c mono" x="220" y="276">/api/v1</text>
+      <rect class="n-store" x="140" y="340" width="160" height="60" rx="6"/>
+      <text class="t c" x="220" y="366">DB</text><text class="t-sub c" x="220" y="384">원본 데이터</text>
+    </svg>
+    <figcaption><b>그림 2.</b> 캐시가 맞으면 요청은 CDN에서 끝나고, 서버와 DB는 모른 채 지나간다 — 출처: 직접 작성</figcaption>
+  </figure>
+
+  <h2 id="revalidate">재검증</h2>
+  <p>예시 본문. 순서가 있는 상호작용은 단계 넘김 그림으로 한 단계씩 보여 준다.</p>
+
+  <!-- 예시: 단계 넘김 그림. data-step 요소가 차례로 나타난다. JS가 없으면 전부 보이고 설명은 번호 목록으로 남는다 -->
+  <figure data-steps>
+    <div class="fig-scroll">
+      <svg class="dg" viewBox="0 0 760 312" role="img" aria-labelledby="f3-title f3-desc">
+        <title id="f3-title">ETag 재검증 순서</title>
+        <desc id="f3-desc">브라우저가 CDN에 파일을 요청하고, 사본이 만료된 CDN은 If-None-Match 헤더로 원본 서버에 변경 여부를 묻는다. 원본이 304로 답하면 CDN은 기존 사본을 브라우저에 준다.</desc>
+        <defs>
+          <marker id="f3-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arr" d="M0,1 L10,5 L0,9 z"/></marker>
+          <marker id="f3-arr-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arr-a" d="M0,1 L10,5 L0,9 z"/></marker>
+        </defs>
+        <path class="life" d="M120,56 V296 M380,56 V296 M640,56 V296"/>
+        <rect class="n-input" x="56" y="16" width="128" height="40" rx="6"/><text class="t c" x="120" y="41">브라우저</text>
+        <rect class="n-focal" x="316" y="16" width="128" height="40" rx="6"/><text class="t c" x="380" y="41">CDN</text>
+        <rect class="n-step" x="576" y="16" width="128" height="40" rx="6"/><text class="t c" x="640" y="41">원본 서버</text>
+        <g data-step="1">
+          <path class="e" d="M120,96 H378" marker-end="url(#f3-arr)"/>
+          <rect class="mask" x="198" y="74" width="104" height="16"/>
+          <text class="t-edge c mono" x="250" y="86">GET /logo.png</text>
+        </g>
+        <g data-step="2">
+          <path class="e" d="M380,156 H638" marker-end="url(#f3-arr)"/>
+          <rect class="mask" x="438" y="134" width="144" height="16"/>
+          <text class="t-edge c mono" x="510" y="146">If-None-Match: "v7"</text>
+        </g>
+        <g data-step="3">
+          <path class="e e-dash" d="M640,216 H382" marker-end="url(#f3-arr)"/>
+          <rect class="mask" x="452" y="194" width="120" height="16"/>
+          <text class="t-edge c" x="510" y="206">304 Not Modified</text>
+        </g>
+        <g data-step="4">
+          <path class="e-focal e-dash" d="M380,276 H122" marker-end="url(#f3-arr-a)"/>
+          <rect class="mask" x="204" y="254" width="92" height="16"/>
+          <text class="t-edge c" x="250" y="266">캐시 사본 전달</text>
+        </g>
+      </svg>
+    </div>
+    <div class="step-bar" aria-hidden="true"></div>
+    <ol class="step-notes">
+      <li>브라우저가 CDN에 <code>/logo.png</code>를 요청한다.</li>
+      <li>CDN의 사본은 유효 기간이 지났다. 버리지 않고, 가진 버전(<code>"v7"</code>)을 원본 서버에 알려 바뀌었는지 묻는다.</li>
+      <li>원본 파일이 그대로라서 서버는 본문 없이 <code>304</code>만 돌려준다. 몇 바이트짜리 응답이다.</li>
+      <li>CDN은 사본의 유효 기간을 연장하고 그 사본을 브라우저에 준다.</li>
+    </ol>
+    <figcaption><b>그림 3.</b> 만료는 곧 삭제가 아니다 — 파일이 그대로면 본문은 다시 오가지 않는다 — 출처: 직접 작성</figcaption>
+  </figure>
+
+  <h2 id="config">설정 예시</h2>
+  <p>예시 본문. 같은 내용을 도구·언어별로 보여 줄 때는 탭을 쓴다.</p>
+
+  <!-- 예시: 탭. JS가 없으면 제목(.tab-title)과 함께 차례로 펼쳐진다 -->
+  <div class="tabs" data-tabs>
+    <section class="tab">
+      <h4 class="tab-title">Nginx</h4>
+<pre><code class="language-nginx">location /assets/ {
+    add_header Cache-Control "public, max-age=31536000, immutable";
+}</code></pre>
+    </section>
+    <section class="tab">
+      <h4 class="tab-title">Express</h4>
+<pre><code class="language-js">app.use('/assets', express.static('dist/assets', {
+  maxAge: '1y',
+  immutable: true,
+}));</code></pre>
+    </section>
+  </div>
+
+  <div class="note tip">
+    <b>팁</b>
+    <p><code>immutable</code>은 "이 주소의 내용은 절대 안 바뀐다"는 약속이다. 파일 이름에 해시가 들어 있을 때만 붙인다.</p>
+  </div>
+
+  <h2 id="pitfalls">흔한 실수</h2>
+
+  <!-- 예시: 전/후 비교. 넓은 화면에서는 나란히, 좁은 화면에서는 위아래로 -->
+  <div class="compare">
+    <div class="before">
+      <h4>이전</h4>
+<pre><code>Cache-Control: no-cache</code></pre>
+      <p>"캐시하지 마라"로 읽기 쉽지만, 실제로는 매번 재검증하라는 뜻이다.</p>
+    </div>
+    <div class="after">
+      <h4>이후</h4>
+<pre><code>Cache-Control: no-store</code></pre>
+      <p>저장 자체를 막으려면 이쪽이다. 개인 정보가 담긴 응답에 쓴다.</p>
+    </div>
+  </div>
+
+  <!-- 예시: 접기. 본문 흐름에 꼭 필요하지 않은 심화 내용 -->
+  <details class="more">
+    <summary>더 알아보기: <code>max-age</code>와 <code>s-maxage</code>의 차이</summary>
+    <div class="body">
+      <p>예시 본문. <code>s-maxage</code>는 CDN 같은 공유 캐시에만 적용되고, 브라우저는 <code>max-age</code>를 따른다.</p>
+    </div>
+  </details>
+
+  <div class="note warn">
+    <b>주의</b>
+    <p>예시 본문. 되돌리기 어려운 설정이나 보안 관련 내용에만 쓴다.</p>
+  </div>
+
+  <h2 id="refs">참고 자료</h2>
+  <ul>
+    <li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Caching" rel="nofollow">MDN — HTTP 캐싱</a></li>
+  </ul>
+</main>
+</div>
+
+<script>
+/* 점진적 향상 — 기능마다 독립. 하나가 실패해도 나머지와 본문은 그대로 */
+(() => {
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  // 목차 스크롤 스파이
+  try {
+    const toc = document.querySelector('.toc');
+    if (toc && 'IntersectionObserver' in window) {
+      const links = $$('a[href^="#"]', toc);
+      const byId = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+      const bar = toc.querySelector('ul');
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (!e.isIntersecting) return;
+          const a = byId.get(e.target.id);
+          if (!a) return;
+          links.forEach(l => l.removeAttribute('aria-current'));
+          a.setAttribute('aria-current', 'true');
+          if (bar.scrollWidth > bar.clientWidth) bar.scrollTo({ left: a.parentElement.offsetLeft - 16 });
+        });
+      }, { rootMargin: '-15% 0px -75% 0px' });
+      byId.forEach((_, id) => { const h = document.getElementById(id); if (h) io.observe(h); });
+    }
+  } catch (_) {}
+
+  // 탭
+  $$('[data-tabs]').forEach((box, bi) => {
+    try {
+      const panels = $$(':scope > .tab', box);
+      const list = document.createElement('div');
+      list.className = 'tablist';
+      list.setAttribute('role', 'tablist');
+      const btns = panels.map((p, i) => {
+        const title = p.querySelector('.tab-title');
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.id = `tabs${bi}-t${i}`;
+        b.textContent = title ? title.textContent : `${i + 1}`;
+        b.setAttribute('role', 'tab');
+        p.id = p.id || `tabs${bi}-p${i}`;
+        b.setAttribute('aria-controls', p.id);
+        p.setAttribute('role', 'tabpanel');
+        p.setAttribute('aria-labelledby', b.id);
+        if (title) title.hidden = true;
+        b.addEventListener('click', () => select(i));
+        list.append(b);
+        return b;
+      });
+      const select = (i, focus) => {
+        btns.forEach((b, j) => {
+          b.setAttribute('aria-selected', String(j === i));
+          b.tabIndex = j === i ? 0 : -1;
+          panels[j].hidden = j !== i;
+        });
+        if (focus) btns[i].focus();
+      };
+      list.addEventListener('keydown', e => {
+        const i = btns.indexOf(document.activeElement);
+        if (i < 0) return;
+        if (e.key === 'ArrowRight') select((i + 1) % btns.length, true);
+        else if (e.key === 'ArrowLeft') select((i - 1 + btns.length) % btns.length, true);
+        else return;
+        e.preventDefault();
+      });
+      box.prepend(list);
+      select(0);
+    } catch (_) {}
+  });
+
+  // 단계 넘김 그림
+  $$('[data-steps]').forEach(fig => {
+    try {
+      const parts = $$('[data-step]', fig);
+      const notes = $$('.step-notes > li', fig);
+      const max = Math.max(...parts.map(p => +p.dataset.step));
+      const bar = fig.querySelector('.step-bar');
+      if (!bar || !isFinite(max)) return;
+      bar.removeAttribute('aria-hidden');
+      bar.innerHTML = '<button type="button" class="btn">이전</button><span class="step-count" aria-live="polite"></span><button type="button" class="btn">다음</button>';
+      const [prev, next] = $$('button', bar);
+      const count = bar.querySelector('.step-count');
+      let cur = 1;
+      const render = () => {
+        parts.forEach(p => {
+          const s = +p.dataset.step;
+          p.classList.toggle('is-past', s < cur);
+          p.classList.toggle('is-future', s > cur);
+        });
+        notes.forEach((n, i) => { n.hidden = i + 1 !== cur; });
+        count.textContent = `${cur} / ${max}`;
+        prev.disabled = cur === 1;
+        next.disabled = cur === max;
+      };
+      prev.addEventListener('click', () => { cur = Math.max(1, cur - 1); render(); });
+      next.addEventListener('click', () => { cur = Math.min(max, cur + 1); render(); });
+      notes.forEach((n, i) => { n.insertAdjacentHTML('afterbegin', `<b>${i + 1}.</b> `); });
+      render();
+    } catch (_) {}
+  });
+
+  // 툴팁
+  try {
+    const tip = document.createElement('div');
+    tip.className = 'tooltip';
+    tip.setAttribute('role', 'tooltip');
+    tip.hidden = true;
+    document.body.append(tip);
+    const show = el => {
+      const r = el.getBoundingClientRect();
+      tip.textContent = el.dataset.tip;
+      tip.style.left = `${Math.min(Math.max(r.left + r.width / 2, 140), innerWidth - 140)}px`;
+      tip.style.top = `${r.top}px`;
+      tip.hidden = false;
+    };
+    $$('[data-tip]').forEach(el => {
+      el.addEventListener('pointerenter', () => show(el));
+      el.addEventListener('focus', () => show(el));
+      el.addEventListener('pointerleave', () => { tip.hidden = true; });
+      el.addEventListener('blur', () => { tip.hidden = true; });
+    });
+    addEventListener('scroll', () => { tip.hidden = true; }, { passive: true });
+  } catch (_) {}
+
+  // 코드 복사 버튼
+  $$('pre > code').forEach(code => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'copy';
+    b.textContent = '복사';
+    b.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(code.innerText); b.textContent = '복사됨'; }
+      catch (_) { b.textContent = '복사 실패'; }
+      setTimeout(() => { b.textContent = '복사'; }, 1500);
+    });
+    code.parentElement.append(b);
+  });
+})();
+</script>
+</body>
+</html>

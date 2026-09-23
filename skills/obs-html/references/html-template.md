@@ -1,140 +1,96 @@
-# HTML 템플릿 (obs-html 6단계)
+# HTML 페이지 (obs-html 6단계)
 
-Obsidian 볼트에 들어가는 문서다. **외부 의존이 하나도 없어야 한다** — 볼트는
-오프라인에서 열리고, CDN 링크는 언젠가 깨진다.
+> 페이지 구성·반응형 패턴은 [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer)
+> (MIT), 디자인 판단·AI 티 목록은 [anthropics/skills frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design)
+> (Apache-2.0)을 참고해 오프라인 한국어 문서에 맞게 옮겼다. 원본의 CDN(Mermaid·Chart.js·웹폰트)은 쓰지 않는다.
 
-## 규칙
+**출발점은 `assets/template.html`이다.** 통째로 복사한 뒤 `{{…}}`와 `예시` 블록을
+실제 내용으로 바꾼다. CSS 토큰·다이어그램 클래스·컴포넌트·스크립트가 모두 들어 있고,
+라이트/다크·데스크톱/모바일·JS 꺼짐에서 검증을 마쳤다. 처음부터 새로 짜지 않는다.
 
-- 완전한 단일 HTML 파일 (`<!DOCTYPE html>` … `</html>`), `lang="ko"`
-- CSS는 전부 `<style>` 안에 인라인. **외부 스타일시트·폰트·스크립트 금지**
-- 이미지: 상대 경로 `assets/…`, 인라인 `<svg>`, 또는 `data:` URI
-- 라이트/다크 모두 대응
-- 한국어 줄바꿈을 위해 `word-break: keep-all`
+## 절대 규칙
 
-## 기본 템플릿
+- 완전한 단일 파일, `<html lang="ko">`. CSS·JS는 전부 인라인.
+- **외부 리소스 0개** — CDN, 웹폰트(Google Fonts 포함), 외부 스크립트·스타일시트,
+  핫링크 이미지 금지. 볼트는 오프라인에서 열린다. 이미지는 `assets/…` 상대 경로.
+- **JS 없이도 모든 내용이 읽혀야 한다.** HTML 뷰어 플러그인은 스크립트를 막기도 한다.
+  스크립트는 이미 있는 내용을 *정리*만 한다(탭으로 묶기, 단계별로 보이기). JS로만
+  생기는 내용은 없다.
+- 색은 `:root` 토큰만. 라이트/다크는 `prefers-color-scheme`이 자동 처리한다.
+- `word-break: keep-all` 유지. 본문 폭 `--measure`(720px ≈ 한글 40자)를 넓히지 않는다.
 
-```html
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{제목}}</title>
-  <meta name="description" content="{{한 줄 요약}}">
-  <style>
-    :root {
-      color-scheme: light dark;
-      --bg: #ffffff; --fg: #24292f; --muted: #6b7280;
-      --border: #e5e7eb; --code-bg: #f6f8fa; --link: #0969da;
-      --accent: #0969da; --note-bg: #f6f8fa;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #1e1e1e; --fg: #e6e6e6; --muted: #9aa0a6;
-        --border: #3a3a3a; --code-bg: #2a2a2a; --link: #6cb6ff;
-        --accent: #6cb6ff; --note-bg: #262626;
-      }
-    }
-    * { box-sizing: border-box; }
-    body {
-      max-width: 820px; margin: 0 auto; padding: 2rem 1.2rem;
-      background: var(--bg); color: var(--fg);
-      font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
-      line-height: 1.8; word-break: keep-all;
-    }
-    h1 { font-size: 2rem; line-height: 1.35; margin: 0 0 .6rem; }
-    h2 { margin-top: 2.8rem; padding-bottom: .35rem; border-bottom: 1px solid var(--border); }
-    h3 { margin-top: 2rem; }
-    p, li { font-size: 1.05rem; }
-    a { color: var(--link); }
-    .subtitle { color: var(--muted); margin-top: 0; }
-    pre {
-      background: var(--code-bg); padding: 1rem; border-radius: 8px;
-      overflow-x: auto; font-size: .9rem; line-height: 1.6;
-    }
-    code:not(pre code) {
-      background: var(--code-bg); padding: .15em .4em; border-radius: 4px; font-size: .9em;
-    }
-    figure { margin: 2rem 0; text-align: center; }
-    figure img, figure svg { max-width: 100%; height: auto; border-radius: 8px; }
-    figcaption { font-size: .85rem; color: var(--muted); margin-top: .6rem; }
-    blockquote {
-      margin: 1.6rem 0; padding: .6rem 1rem;
-      border-left: 4px solid var(--accent); background: var(--note-bg);
-      border-radius: 0 6px 6px 0; color: var(--fg);
-    }
-    table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }
-    th, td { border: 1px solid var(--border); padding: .5rem .8rem; text-align: left; }
-    th { background: var(--note-bg); }
-    .tldr { background: var(--note-bg); border-radius: 8px; padding: 1rem 1.2rem; }
-  </style>
-</head>
-<body>
-  <article>
-    <h1>{{제목}}</h1>
-    <p class="subtitle">{{한 줄 요약}}</p>
+## 설계 먼저 — 3줄 계획
 
-    <!-- 섹션마다: h2 + 문단 + figure(그림 최소 1개) + (기술 문서면) 코드 -->
+쓰기 전에 스스로 정한다 (문서에는 넣지 않는다):
 
-    <h2>마무리</h2>
-    <div class="tldr">
-      <p><strong>한눈에 보기</strong></p>
-      <ul><li>{{요점}}</li></ul>
-    </div>
+1. **이 문서에서 가장 기억에 남아야 할 한 장면**은? → 그 그림이나 컴포넌트에만 공을
+   들인다. 나머지는 조용하게. 대담함은 한 곳에만 쓴다.
+2. **섹션 수** → 4개 이상이면 목차(`.toc`)를 넣고, 3개 이하면 `<aside class="toc">`를
+   지우고 `.page`에서 `has-toc`을 뺀다.
+3. **컴포넌트** → 아래 표에서 내용이 *실제로* 요구하는 것만 고른다. 쓸 수 있다고
+   쓰지 않는다. 구조는 사실이어야 한다 — 번호는 진짜 순서일 때만, 탭은 진짜 대안일 때만.
 
-    <h2>참고 자료</h2>
-    <ul><li><a href="{{링크}}" rel="nofollow">{{출처 제목}}</a></li></ul>
-  </article>
-</body>
-</html>
+## 컴포넌트 — 언제 쓰나
+
+| 컴포넌트 | 마크업 | 쓸 때 | 쓰지 말 때 |
+|---|---|---|---|
+| 핵심 요약 | `.tldr` | 문서 맨 앞, 요점 3개 안팎 | 요점이 본문 소제목을 반복할 때 |
+| 콜아웃 | `.note` / `.note.tip` / `.note.warn` | 본문 흐름 밖의 팁·주의. 섹션당 최대 1개 | 강조하고 싶은 문장마다 |
+| 반응형 그림 | `svg.fig-wide` + `svg.fig-narrow` | 문서의 **핵심 그림**. 넓은 판(760)과 세로 판(360)을 둘 다 그린다 | 보조 그림 (→ `.fig-scroll`) |
+| 가로 스크롤 그림 | `div.fig-scroll > svg` | 시퀀스처럼 세로로 바꾸기 어려운 넓은 그림. 모바일에서 640px 폭으로 스크롤 | 핵심 그림 |
+| 단계 넘김 그림 | `figure[data-steps]` + `[data-step]` + `ol.step-notes` + `.step-bar` | 순서가 핵심인 시퀀스·절차 (단계 3~6개). JS 없으면 전부 보이고 설명은 번호 목록 | 순서가 중요하지 않은 구조도 |
+| 탭 | `div.tabs[data-tabs] > section.tab > h4.tab-title` | **같은 내용의 대안** — 언어별 코드, OS별 명령 | 서로 다른 내용 (→ 섹션으로 나눈다) |
+| 전/후 비교 | `div.compare > div.before + div.after` | 설정·코드·문장의 이전/이후. 넓으면 나란히, 좁으면 위아래 | 세 가지 이상 비교 (→ 표) |
+| 접기 | `details.more > summary + div.body` | 본문 흐름에 없어도 되는 심화·예외 | 핵심 내용 (접힌 건 안 읽힌다) |
+| HTML 막대 차트 | `ul.bars > li` (`--v: 퍼센트`) | 항목 2~8개의 단순 비교. 폭이 바뀌어도 글자 크기 유지 | 시계열·분포 (→ `dataviz` 스킬로 SVG) |
+| 툴팁 | 아무 요소에 `data-tip="…" tabindex="0"` | 차트 막대·그림 요소의 보조 설명 | 꼭 읽혀야 할 정보 (터치에선 잘 안 보인다) |
+| 표 | `div.table-wrap > table` (숫자 열은 `td.num`) | 3개 이상 항목 × 2개 이상 속성 | — |
+| 코드 | `pre > code.language-*` | 복사 버튼은 스크립트가 붙인다 | — |
+
+id 규칙: 그림마다 접두사(`f1-`, `f2-`, 세로 판은 `f2n-`). 탭·단계 id는 스크립트가 만든다.
+
+## 반응형 규칙
+
+- 중단점: **1100px** (목차 사이드바 ↔ 위에 붙는 가로 목차), **768px** (전/후 비교
+  나란히 ↔ 위아래), **600px** (본문 16px, 넓은 그림 ↔ 세로 그림).
+- 넘침 방지: 그리드·플렉스 자식에 `min-width: 0`, 표는 `.table-wrap`, 코드는
+  `pre`가 가로 스크롤. 새 레이아웃을 만들면 이 둘을 반드시 챙긴다.
+- **SVG 글자는 화면과 함께 줄어든다.** 760 캔버스를 390px 화면에 그대로 넣으면
+  13px 글자가 6px가 된다. 그래서 핵심 그림은 세로 판, 나머지는 `.fig-scroll`.
+  단순 막대 비교는 SVG 대신 `.bars`(HTML)로 그리면 이 문제가 아예 없다.
+- 새 컴포넌트가 필요하면 템플릿 토큰으로 만들고, 390px에서 스크린샷으로 확인한다.
+
+## 페이지 타이포·톤
+
+- 글꼴은 시스템 폰트 스택만 (`--sans`, `--mono`). 제목은 크기·굵기로만 위계를 준다.
+- 캡션은 **주장**이다: `<b>그림 N.</b> {독자가 가져갈 한 문장} — 출처: …`.
+- 최소 크기: 본문 16px(모바일)/17px, 캡션 ≈14.6px, 그림 속 한글 12px.
+
+### AI 티 나는 페이지 (피한다)
+
+| 증상 | 대신 |
+|---|---|
+| 크림색 배경 + 테라코타 강조, 거의 검정 배경 + 형광 강조 | 템플릿 토큰 그대로 (흰 배경 + 파랑 하나) |
+| 같은 그림자·같은 크기 카드 3개를 나란히 | 표, 목록, 또는 크기가 다른 요소 |
+| 자간 넓힌 대문자 눈썹 라벨(`OVERVIEW`) | 한국어 소제목 |
+| "A · B · C" 식 메타 문자열, 링크 뒤 `→` | 평범한 문장 |
+| 섹션마다 아이콘·이모지 | 없앤다 |
+| 모든 섹션에 콜아웃·접기·탭을 하나씩 | 필요한 곳에만 |
+| 그라데이션 제목, 유리 효과, 네온 발광 | 없앤다 |
+
+## 검증 — 저장 전에 반드시 (SKILL.md 6단계)
+
+```bash
+S="{스킬 폴더}/scripts"   # 스킬을 불러올 때 표시되는 Base directory
+python3 "$S/check_html.py" "{scratchpad}/{제목}/index.html"
+bash "$S/snap.sh" "{scratchpad}/{제목}/index.html" "{scratchpad}/{제목}/_snap" 5000
 ```
 
-## 그림 넣는 법
-
-**웹 이미지** — 볼트 폴더 안 `assets/`로 내려받고 상대 경로로 참조한다.
-
-```html
-<figure>
-  <img src="assets/flow.png" alt="요청 처리 흐름도" loading="lazy">
-  <figcaption>그림 1. 요청 처리 흐름 — 출처: <a href="{{원본}}" rel="nofollow">{{출처명}}</a></figcaption>
-</figure>
-```
-
-**직접 그린 SVG** — 구조·흐름 설명의 기본 선택지. `currentColor`를 쓰면 다크
-모드에서도 그대로 읽힌다.
-
-```html
-<figure>
-  <svg viewBox="0 0 480 120" role="img" aria-label="요청 처리 흐름도" fill="none"
-       stroke="currentColor" stroke-width="1.5" font-size="13">
-    <rect x="10"  y="35" width="110" height="50" rx="8"/>
-    <text x="65"  y="65" text-anchor="middle" stroke="none" fill="currentColor">클라이언트</text>
-    <rect x="185" y="35" width="110" height="50" rx="8"/>
-    <text x="240" y="65" text-anchor="middle" stroke="none" fill="currentColor">API 서버</text>
-    <rect x="360" y="35" width="110" height="50" rx="8"/>
-    <text x="415" y="65" text-anchor="middle" stroke="none" fill="currentColor">DB</text>
-    <path d="M120 60 H185"  marker-end="url(#a)"/>
-    <path d="M295 60 H360" marker-end="url(#a)"/>
-    <defs>
-      <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-        <path d="M0 0 L7 3 L0 6 z" fill="currentColor" stroke="none"/>
-      </marker>
-    </defs>
-  </svg>
-  <figcaption>그림 1. 요청 처리 흐름 — 출처: 직접 작성</figcaption>
-</figure>
-```
-
-**차트** — 수치 비교는 인라인 SVG 막대/선 차트로. 그리기 전에 `dataviz` 스킬을
-읽어 색상·축·범례 규칙을 맞춘다.
-
-## 코드 블록
-
-```html
-<pre><code class="language-python">async def handler(req):
-    return {"ok": True}
-</code></pre>
-```
-
-하이라이팅 라이브러리는 붙이지 않는다 (외부 스크립트 금지). `class="language-*"`는
-남겨두면 나중에 다른 곳에 옮겨 붙일 때 쓸모가 있다.
+- `check_html.py`는 오류가 0건이 될 때까지 고친다. 경고는 읽고 판단한다.
+- `snap.sh`가 만든 PNG 5장(데스크톱·모바일 × 라이트·다크, JS 꺼짐)을 **Read로 직접
+  본다.** 확인할 것: 모바일에서 그림 글자가 읽히는가 / 가로로 넘치는 게 없는가 /
+  다크에서 대비가 무너진 곳이 없는가 / JS 꺼짐에서 빠진 내용이 없는가.
+  `height`는 문서 길이에 맞춰 넉넉히 준다 (잘리면 늘린다).
+- Chrome이 없으면 `snap.sh`는 코드 2로 끝난다 — 그때는 스크린샷 검수를 건너뛰었다고
+  완료 보고에 적는다.
+- `_snap/` 폴더는 볼트로 옮기지 않는다.

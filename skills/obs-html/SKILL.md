@@ -7,8 +7,11 @@ description: >-
   "/obs-html", or any request to produce an HTML write-up destined for Obsidian.
   Always interviews the user first (AskUserQuestion) to pin down length and the
   concrete requirements, writes natural Korean at a junior-friendly level, embeds
-  at least one visual per major section, then hands the finished HTML to the obs
-  skill for folder-note filing and Home.md indexing.
+  at least one visual per major section (editorial SVG diagrams with strict
+  connector/label rules), renders a responsive, progressively-enhanced page
+  (TOC, tabs, step-through figures, before/after, collapsibles; light/dark),
+  verifies it with a static checker and headless-Chrome screenshots, then hands
+  the finished HTML to the obs skill for folder-note filing and Home.md indexing.
 ---
 
 # obs-html — HTML 문서를 써서 Obsidian에 정리·저장
@@ -36,7 +39,7 @@ description: >-
 
 ```
 1. 인터뷰 (AskUserQuestion)  →  2. 리서치  →  3. 개요 확인
-   →  4. 집필 (한국어)  →  5. 시각 자료 삽입  →  6. HTML 렌더
+   →  4. 집필 (한국어)  →  5. 시각 자료 삽입  →  6. HTML 렌더 + 검증
    →  7. obs 스킬로 저장  →  8. 완료 보고
 ```
 
@@ -119,15 +122,17 @@ description: >-
 
 ### 5. 시각 자료 — 반드시 넣는다
 
-**주요 섹션마다 최소 1개.** 우선순위 순으로 고른다:
+**주요 섹션마다 최소 1개.** 단, 억지 그림은 없느니만 못하다 — 그리기 전에 "이 그림을
+본 독자는 무엇을 깨닫는가?"에 한 문장으로 답한다. 그 답이 캡션이 된다. 답이 없으면
+그림 대신 표·비교 패널·단계 넘김 같은 컴포넌트(6단계)가 맞는지 본다.
 
-1. **인라인 SVG 다이어그램** — 구조·흐름·관계를 직접 그린다. 외부 의존이 없어
-   HTML 하나로 완결되고, Obsidian에서도 그대로 보인다. **기본 선택지.**
-   그릴 때 지킬 것: 모서리 둥글기는 CSS `rx:`가 아니라 SVG 속성 `rx="10"`으로
-   준다. `<filter>`·`<marker>` 정의는 문서에 **하나의 공유 `<defs>`**로 두고
-   모든 그림이 그것을 참조한다 — 그림마다 따로 선언하면 다른 그림의 참조가
-   깨져 도형이 통째로 렌더링되지 않는다. 애니메이션은 넣지 않는다.
-2. **인라인 SVG 차트** — 수치 비교. 차트를 그리기 전에 `dataviz` 스킬을 읽는다.
+우선순위 순으로 고른다:
+
+1. **인라인 SVG 다이어그램** — 구조·흐름·순서·관계. 기본 선택지.
+   그리기 전에 **`references/diagram-design.md`를 읽는다** — 타입 선택, 노드 종류별
+   처리, 커넥터 규칙 6가지, 한글 라벨 폭 산식, 복잡도 예산, 안티패턴이 거기 있다.
+2. **단순 수치 비교** — 항목 몇 개의 크기 비교는 `.bars`(HTML 막대, 템플릿에 있음).
+   시계열·분포 같은 본격 차트는 `dataviz` 스킬을 읽고 SVG로 그리되 색은 템플릿 토큰.
 3. **웹 이미지** — 공식 문서/저장소 자산, Wikimedia Commons, Unsplash/Pexels 등
    재사용이 허용된 것만. `WebSearch`로 찾고 `WebFetch`로 출처를 확인한다.
    **저작권이 명백한 이미지는 쓰지 않는다.**
@@ -136,34 +141,48 @@ description: >-
 나중에 깨진다):
 
 ```bash
-curl -L -o "{볼트폴더}/assets/{파일명}.png" "{이미지 URL}"
+curl -L -o "{scratchpad}/{제목}/assets/{파일명}.png" "{이미지 URL}"
 ```
 
-모든 그림은 캡션과 출처를 함께 붙인다:
+모든 그림은 figure + 주장을 담은 캡션 + 출처:
 
 ```html
 <figure>
   <img src="assets/architecture.png" alt="요청 처리 흐름도" loading="lazy">
-  <figcaption>그림 1. 요청 처리 흐름 — 출처: <a href="원본링크" rel="nofollow">출처명</a></figcaption>
+  <figcaption><b>그림 1.</b> 요청은 게이트웨이에서 한 번만 인증된다 — 출처: <a href="원본링크" rel="nofollow">출처명</a></figcaption>
 </figure>
 ```
 
 직접 그린 SVG면 `출처: 직접 작성`으로 표기한다. 쓸 만한 이미지를 못 찾겠으면
 **저작권 위반 이미지로 때우지 말고 SVG를 직접 그린다.**
 
-### 6. HTML 렌더
+### 6. HTML 렌더 — 반응형·인터랙티브 + 검증
 
-`references/html-template.md`의 템플릿을 쓴다. 요건:
+**`references/html-template.md`를 읽고, `assets/template.html`을 복사해서 시작한다.**
+템플릿에는 토큰(라이트/다크), 목차(넓은 화면 사이드바 ↔ 모바일 상단 바), 반응형 그림,
+단계 넘김 그림, 탭, 전/후 비교, 접기, 막대 차트, 툴팁, 코드 복사가 들어 있다.
+내용이 요구하는 컴포넌트만 쓰고 나머지는 지운다.
+
+요건:
 
 - `<!DOCTYPE html>` … `<html lang="ko">` 로 시작하는 **완전한 단일 파일**
-- CSS는 인라인, **CDN·외부 폰트·외부 스크립트 금지** — Obsidian은 오프라인에서
-  열리고, 외부 링크는 언젠가 깨진다. 코드 하이라이팅도 최소한의 인라인 CSS로.
-- 이미지는 상대 경로(`assets/…`) 또는 인라인 SVG/`data:` URI
-- 라이트·다크 모드 모두에서 읽히게 (`color-scheme` + `prefers-color-scheme`)
-- 시맨틱 마크업, `word-break: keep-all` (한국어 줄바꿈)
+- CSS·JS는 인라인, **CDN·외부 폰트·외부 스크립트 금지** — Obsidian은 오프라인에서
+  열리고, 외부 링크는 언젠가 깨진다.
+- **JS 없이도 모든 내용이 보여야 한다** (점진적 향상 — HTML 뷰어가 스크립트를 막을 수 있다)
+- 이미지는 상대 경로(`assets/…`) 또는 인라인 SVG
+- 데스크톱·모바일, 라이트·다크 모두에서 읽힌다
 
 파일은 먼저 스크래치패드에 쓴다: `{scratchpad}/{제목}/index.html`
 (+ 필요하면 `{scratchpad}/{제목}/assets/`).
+
+**저장 전 검증 — 건너뛰지 않는다:**
+
+1. `python3 {스킬 폴더}/scripts/check_html.py index.html` — 외부 리소스, SVG 접근성
+   계약, id 중복, 12px 미만 한글, **박스를 넘치는 라벨**을 잡는다. 오류 0건까지 고친다.
+2. `bash {스킬 폴더}/scripts/snap.sh index.html _snap 5000` — 헤드리스 Chrome으로
+   데스크톱·모바일(390px) × 라이트·다크 + JS 꺼짐, PNG 5장. **Read로 직접 보고**
+   `html-template.md` "검증"의 항목을 확인한다. 어긋나면 고치고 다시 찍는다.
+   2~3번 고쳐도 안 되면 무엇이 남았는지 완료 보고에 적는다.
 
 ### 7. 저장 — `obs` 스킬에 위임
 
@@ -190,7 +209,7 @@ Skill(skill="obs", args='Documents/ "{제목}"')
 ✓ HTML 문서를 작성해 Obsidian에 저장했습니다.
   경로: Documents/{제목}/index.html
   노트: Documents/{제목}/{제목}.md
-  분량: 약 {N}자 · 그림 {M}개
+  분량: 약 {N}자 · 그림 {M}개 · 검증: check_html 통과, 스크린샷 5장 확인
   열기: obsidian://open?vault={vault 이름}&file={URL인코딩된 경로}
 ```
 
