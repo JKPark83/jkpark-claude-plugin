@@ -8,8 +8,12 @@ description: >-
   Always interviews the user first (AskUserQuestion) to pin down length and the
   concrete requirements, writes natural Korean at a junior-friendly level, embeds
   at least one visual per major section (editorial SVG diagrams with strict
-  connector/label rules), renders a responsive, progressively-enhanced page
-  (TOC, tabs, step-through figures, before/after, collapsibles; light/dark),
+  connector/label rules), shapes the page by document type (강의/튜토리얼,
+  리포트, 분석, 정리 — each with its own outline skeleton and blocks), lets the
+  user pick one of 21 palettes (beautiful-article + theme-factory) or a custom
+  one drawn from the subject, plans and critiques the
+  design the frontend-design way, renders a responsive, progressively-enhanced
+  page (TOC, tabs, step-through figures, before/after, collapsibles; light/dark),
   verifies it with a static checker and headless-Chrome screenshots, then hands
   the finished HTML to the obs skill for folder-note filing and Home.md indexing.
 ---
@@ -18,6 +22,13 @@ description: >-
 
 주제 하나를 받아서 **자체 완결형(self-contained) HTML 문서**로 쓰고, 그것을
 **`obs` 스킬을 통해 Obsidian 볼트에 folder-note로 저장**한다.
+
+역할을 나눈다. **문서 구조와 내용은 obs-html**(인터뷰·리서치·개요·집필·그림)이 정하고,
+**디자인은 Anthropic frontend-design의 판단과 팔레트 21종**(beautiful-article 11 + theme-factory 10)으로 입힌다.
+**문서 유형**(강의·리포트·분석·정리)이 목차 골격·전용 블록·추천 팔레트를 함께 정한다(`references/doc-types.md`).
+유형은 1단계 인터뷰에서, 팔레트는 3단계에서 개요와 함께 확정하고(`references/themes.md`), 디자인 계획과 비평은 6단계에서
+한다(`references/html-template.md` "디자인 계획"). 원본 스킬들은 오프라인 볼트 규칙에
+맞게 이 폴더에 옮겨 두었으므로(`assets/themes.css`) 따로 설치하지 않아도 된다.
 
 이 스킬 파일은 영어로 쓰여 있지만, **사용자에게 보이는 모든 것 — 문서 본문,
 제목, 캡션, 질문, 완료 보고 — 은 반드시 한국어**로 쓴다. 코드·식별자·정착된 영어
@@ -38,14 +49,14 @@ description: >-
 ## 워크플로
 
 ```
-1. 인터뷰 (AskUserQuestion)  →  2. 리서치  →  3. 개요 확인
-   →  4. 집필 (한국어)  →  5. 시각 자료 삽입  →  6. HTML 렌더 + 검증
+1. 인터뷰 (AskUserQuestion)  →  2. 리서치  →  3. 개요·테마 확인
+   →  4. 집필 (한국어)  →  5. 시각 자료 삽입  →  6. 디자인 계획 → HTML 렌더 + 검증
    →  7. obs 스킬로 저장  →  8. 완료 보고
 ```
 
 ### 1. 인터뷰 — 필수, 건너뛰지 않는다
 
-`AskUserQuestion`을 **한 번의 호출로** 최대 4개 질문을 묶어 던진다. 최소 아래 두
+`AskUserQuestion`을 **한 번의 호출로** 최대 4개 질문을 묶어 던진다. 최소 아래 세
 가지는 반드시 포함한다.
 
 **질문 A — 총 분량** (header: `분량`)
@@ -63,7 +74,19 @@ description: >-
 - `기술 문서` — 코드·아키텍처·API. **주니어 개발자가 읽고 따라올 수 있는 수준.**
 - `비기술 문서` — 기획·리서치·개념 설명. **전공자가 아니어도 이해할 수 있게 쉽게 풀어서.**
 
-**질문 C·D — 주제별 구체 요구사항 (매번 새로 만든다)**
+**질문 C — 문서 유형** (header: `문서 유형`)
+
+구조·전용 블록·추천 팔레트가 여기서 정해진다(`references/doc-types.md`). 옵션은 이 네 개로
+고정하고, 주제에 가장 맞는 것을 첫 번째에 두고 `(권장)`을 붙인다.
+
+| 옵션 | 설명 |
+|------|------|
+| 강의/튜토리얼 | N강 구성, 학습 목표, 실습. 따라 하며 배우는 문서 |
+| 리포트/보고서 | 결론 먼저, 핵심 지표, 권고안. 판단하는 사람이 읽는 문서 |
+| 분석 | 범위, 발견과 근거, 가설 검증. 코드·시스템·이슈를 파고드는 문서 |
+| 정리/요약 노트 | 한 장 요약, 용어, 비교표. 나중에 다시 찾아보는 문서 |
+
+**질문 D — 주제별 구체 요구사항 (매번 새로 만든다)**
 
 주제를 보고 정말로 갈리는 지점을 골라 묻는다. 예시 (그대로 베끼지 말 것):
 
@@ -90,20 +113,13 @@ description: >-
 이미 잘 아는 주제이고 사용자가 빠른 정리를 원하면 리서치는 생략해도 되지만,
 **최신 버전·수치를 문서에 쓸 거라면 반드시 확인한다.**
 
-### 3. 개요 확인 — 짧게
+### 3. 개요·테마 확인 — 짧게
 
-한국어 목차(섹션 + 한 줄 설명)를 제시하고 확인받는다. 여기서 붙잡고 늘어지지
-않는다. 기본 골격 (자유롭게 변형):
-
-```
-도입 — 왜 필요한가, 어떤 문제를 푸는가
-배경 — 따라오는 데 필요한 최소한의 사전 지식
-본론 — 섹션별 설명 + 그림 + (기술 문서면) 코드
-실전 예제 / 적용
-흔한 실수 · 팁
-마무리 — 한눈에 보는 요약
-참고 자료 — 출처 링크
-```
+`references/doc-types.md`에서 1단계에서 고른 유형의 **골격**으로 한국어 목차(섹션 + 한 줄
+설명)를 짜서 제시하고, **같은 `AskUserQuestion` 호출에서 팔레트를 고르게 한다.**
+`references/themes.md` "흐름"을 따른다. 후보는 그 유형의 추천 팔레트에서 3개(첫 번째에
+`(권장)`)와 맞춤 테마이고, 질문 앞 본문에 21종 전체 표를 보여 줘서 "Other"로 어느
+팔레트든 고를 수 있게 한다. 사용자가 고른 팔레트로만 진행한다. 여기서 붙잡고 늘어지지 않는다.
 
 ### 4. 집필 — 자연스러운 한국어
 
@@ -158,7 +174,10 @@ curl -L -o "{scratchpad}/{제목}/assets/{파일명}.png" "{이미지 URL}"
 
 ### 6. HTML 렌더 — 반응형·인터랙티브 + 검증
 
-**`references/html-template.md`를 읽고, `assets/template.html`을 복사해서 시작한다.**
+**`references/html-template.md`를 읽고 "디자인 계획" 5항목을 먼저 응답에 적는다.**
+3단계에서 고른 테마의 블록을 `assets/themes.css`에서 복사해 붙이는 것이 2번 항목이고,
+유형의 전용 블록(`doc-types.md`)을 고르는 것이 4번 항목이다. 다른 유형의 블록 CSS는 지운다.
+계획을 검토해 흔한 선택을 고친 뒤에 **`assets/template.html`을 복사해서 시작한다.**
 템플릿에는 토큰(라이트/다크), 목차(넓은 화면 사이드바 ↔ 모바일 상단 바), 반응형 그림,
 단계 넘김 그림, 탭, 전/후 비교, 접기, 막대 차트, 툴팁, 코드 복사가 들어 있다.
 내용이 요구하는 컴포넌트만 쓰고 나머지는 지운다.
@@ -181,7 +200,8 @@ curl -L -o "{scratchpad}/{제목}/assets/{파일명}.png" "{이미지 URL}"
    계약, id 중복, 12px 미만 한글, **박스를 넘치는 라벨**을 잡는다. 오류 0건까지 고친다.
 2. `bash {스킬 폴더}/scripts/snap.sh index.html _snap 5000` — 헤드리스 Chrome으로
    데스크톱·모바일(390px) × 라이트·다크 + JS 꺼짐, PNG 5장. **Read로 직접 보고**
-   `html-template.md` "검증"의 항목을 확인한다. 어긋나면 고치고 다시 찍는다.
+   `html-template.md` "검증"의 항목과 "AI 티 나는 페이지" 표로 비평한다.
+   어긋나면 고치고 다시 찍는다.
    2~3번 고쳐도 안 되면 무엇이 남았는지 완료 보고에 적는다.
 
 ### 7. 저장 — `obs` 스킬에 위임
@@ -209,7 +229,8 @@ Skill(skill="obs", args='Documents/ "{제목}"')
 ✓ HTML 문서를 작성해 Obsidian에 저장했습니다.
   경로: Documents/{제목}/index.html
   노트: Documents/{제목}/{제목}.md
-  분량: 약 {N}자 · 그림 {M}개 · 검증: check_html 통과, 스크린샷 5장 확인
+  분량: 약 {N}자 · 그림 {M}개 · 유형: {문서 유형} · 테마: {테마 이름}
+  검증: check_html 통과, 스크린샷 5장 확인
   열기: obsidian://open?vault={vault 이름}&file={URL인코딩된 경로}
 ```
 

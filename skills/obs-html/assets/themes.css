@@ -1,0 +1,728 @@
+/* obs-html themes — tufte..sottsass from conardli/garden-skills beautiful-article (reacticle, MIT);
+ * ocean-depths..tech-innovation from anthropics/skills theme-factory (Apache-2.0), expanded to 12 tokens.
+ * Copy ONE theme's blocks into the page <style>, right after the template token blocks,
+ * and set <html data-theme="{id}">. :root[data-theme] outranks the template's :root. */
+
+/* @theme tufte — Tufte · 데이터 잉크 */
+:root[data-theme="tufte"] {
+  color-scheme: light dark;
+  --bg: #fbfaf6;
+  --paper: #f3f1e9;
+  --surface: #fffefb;
+  --ink: #1b1b1a;
+  --soft: #3d3a35;
+  --muted: #5c5550;
+  --rule: #d8d2c2;
+  --accent: #3e4a5c;
+  --accent-tint: #e7e9ed;
+  --ext: #6b5a3e;
+  --warn: #a6300e;
+  --good: #4a5a3f;
+  --head: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "AppleMyungjo", "Nanum Myeongjo", "Noto Serif KR", Batang, serif;
+  --head-weight: 600;
+  --radius: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="tufte"] {
+    --bg: #1a1917;
+    --paper: #23221f;
+    --surface: #1f1e1b;
+    --ink: #ece8df;
+    --soft: #c9c3b8;
+    --muted: #9b948a;
+    --rule: #37342f;
+    --accent: #a9b6c9;
+    --accent-tint: #2a3039;
+    --ext: #c4ab82;
+    --warn: #e88a6a;
+    --good: #a3b58f;
+  }
+}
+
+/* @theme press — Press · 출판 편집 */
+:root[data-theme="press"] {
+  color-scheme: light dark;
+  --bg: #fbf7ee;
+  --paper: #f3ecdd;
+  --surface: #fffcf5;
+  --ink: #211e18;
+  --soft: #433d34;
+  --muted: #6a6256;
+  --rule: #e0d6c0;
+  --accent: #7b1e22;
+  --accent-tint: #f0e2df;
+  --ext: #4a5d70;
+  --warn: #b5361b;
+  --good: #415a3a;
+  --head: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "AppleMyungjo", "Nanum Myeongjo", "Noto Serif KR", Batang, serif;
+  --head-weight: 700;
+  --radius: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="press"] {
+    --bg: #1c1814;
+    --paper: #26211b;
+    --surface: #211c17;
+    --ink: #efe7d8;
+    --soft: #cfc5b3;
+    --muted: #a0968a;
+    --rule: #3a332a;
+    --accent: #e08a85;
+    --accent-tint: #3a2222;
+    --ext: #9fb3c6;
+    --warn: #ee8a6c;
+    --good: #a5c094;
+  }
+}
+
+/* @theme shannon — Shannon · 어두운 공학 노트 (dark only) */
+:root[data-theme="shannon"] {
+  color-scheme: dark;
+  --bg: #1a1916;
+  --paper: #22211b;
+  --surface: #1e1d19;
+  --ink: #e8e4d8;
+  --soft: #c6c1b2;
+  --muted: #9a9484;
+  --rule: #34322a;
+  --accent: #e0a73e;
+  --accent-tint: #2e2818;
+  --ext: #8ab4c8;
+  --warn: #e2614a;
+  --good: #8fae6e;
+  --head: var(--sans);
+  --head-weight: 600;
+  --radius: 0;
+}
+
+/* @theme vignelli — Vignelli · 스위스 그리드 */
+:root[data-theme="vignelli"] {
+  color-scheme: light dark;
+  --bg: #f6f7f8;
+  --paper: #eceeef;
+  --surface: #ffffff;
+  --ink: #1a1c1e;
+  --soft: #3a3e42;
+  --muted: #5b6166;
+  --rule: #d4d8db;
+  --accent: #cc1f1e;
+  --accent-tint: #f6e2e1;
+  --ext: #2b5d8a;
+  --warn: #9e1410;
+  --good: #2f6d4f;
+  --head: "Helvetica Neue", Arial, var(--sans);
+  --head-weight: 600;
+  --radius: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="vignelli"] {
+    --bg: #141618;
+    --paper: #1d2023;
+    --surface: #181a1d;
+    --ink: #eceef0;
+    --soft: #c4c8cc;
+    --muted: #9198a0;
+    --rule: #30353a;
+    --accent: #ff5a52;
+    --accent-tint: #3a1a1a;
+    --ext: #7fb0dd;
+    --warn: #ff8a80;
+    --good: #6cc79a;
+  }
+}
+
+/* @theme knuth — Knuth · 학술 논문 */
+:root[data-theme="knuth"] {
+  color-scheme: light dark;
+  --bg: #fcfcfa;
+  --paper: #f3f3ee;
+  --surface: #ffffff;
+  --ink: #1a1a18;
+  --soft: #3b3a35;
+  --muted: #5a574e;
+  --rule: #dcdcd4;
+  --accent: #34507e;
+  --accent-tint: #e6ebf2;
+  --ext: #5e4b8b;
+  --warn: #9a2d1e;
+  --good: #3c5a3a;
+  --head: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "AppleMyungjo", "Nanum Myeongjo", "Noto Serif KR", Batang, serif;
+  --head-weight: 700;
+  --radius: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="knuth"] {
+    --bg: #18191b;
+    --paper: #212225;
+    --surface: #1c1d20;
+    --ink: #e9e9e4;
+    --soft: #c6c6bf;
+    --muted: #9a988f;
+    --rule: #34353a;
+    --accent: #93acd8;
+    --accent-tint: #232c3d;
+    --ext: #b4a3d9;
+    --warn: #e58b7c;
+    --good: #9cc19a;
+  }
+}
+
+/* @theme freddie — Freddie · 노랑 형광펜 */
+:root[data-theme="freddie"] {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --paper: #f7f4ec;
+  --surface: #ffffff;
+  --ink: #2c241c;
+  --soft: #4a4036;
+  --muted: #6f6356;
+  --rule: #e7dfce;
+  --accent: #241c15;
+  --accent-tint: #fff1ad;
+  --ext: #2f6fa5;
+  --warn: #c63d1a;
+  --good: #2f7d4f;
+  --head: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "AppleMyungjo", "Nanum Myeongjo", "Noto Serif KR", Batang, serif;
+  --head-weight: 800;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="freddie"] {
+    --bg: #1b1712;
+    --paper: #252019;
+    --surface: #201b15;
+    --ink: #f3ece0;
+    --soft: #d6ccbc;
+    --muted: #a69a8a;
+    --rule: #3a3228;
+    --accent: #ffd84a;
+    --accent-tint: #3d3418;
+    --ext: #8ab8e6;
+    --warn: #f08a6a;
+    --good: #7cc79a;
+  }
+}
+
+/* @theme andy — Andy · 크림과 오렌지 */
+:root[data-theme="andy"] {
+  color-scheme: light dark;
+  --bg: #fff7ef;
+  --paper: #fdeede;
+  --surface: #fffbf6;
+  --ink: #443d36;
+  --soft: #5e554c;
+  --muted: #736859;
+  --rule: #f0e3d4;
+  --accent: #b94a08;
+  --accent-tint: #ffe4cd;
+  --ext: #2f6fb0;
+  --warn: #c0322a;
+  --good: #367348;
+  --head: "Arial Rounded MT Bold", var(--sans);
+  --head-weight: 700;
+  --radius: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="andy"] {
+    --bg: #211b17;
+    --paper: #2b241e;
+    --surface: #261f1a;
+    --ink: #f5ece2;
+    --soft: #d8ccbf;
+    --muted: #a99c8e;
+    --rule: #3d342c;
+    --accent: #ff9a52;
+    --accent-tint: #3d2a1c;
+    --ext: #8cbbea;
+    --warn: #ff8a80;
+    --good: #85c99c;
+  }
+}
+
+/* @theme bodoni — Bodoni · 신문 1면 */
+:root[data-theme="bodoni"] {
+  color-scheme: light dark;
+  --bg: #fdfdfb;
+  --paper: #f3f2ee;
+  --surface: #ffffff;
+  --ink: #0a0908;
+  --soft: #2e2b26;
+  --muted: #57534a;
+  --rule: #ddd9cf;
+  --accent: #0a0908;
+  --accent-tint: #ecebe5;
+  --ext: #3c4a5a;
+  --warn: #9c1421;
+  --good: #2c5a3f;
+  --head: "Bodoni 72", Didot, "Bodoni MT", "AppleMyungjo", "Nanum Myeongjo", "Noto Serif KR", serif;
+  --head-weight: 700;
+  --radius: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="bodoni"] {
+    --bg: #0e0e0d;
+    --paper: #191917;
+    --surface: #141413;
+    --ink: #f4f3ef;
+    --soft: #d0cec7;
+    --muted: #9e9b93;
+    --rule: #2f2e2b;
+    --accent: #f4f3ef;
+    --accent-tint: #2a2927;
+    --ext: #a9b8c9;
+    --warn: #ef7f88;
+    --good: #8fc4a3;
+  }
+}
+
+/* @theme bayer — Bayer · 바우하우스 삼원색 */
+:root[data-theme="bayer"] {
+  color-scheme: light dark;
+  --bg: #f4f0e6;
+  --paper: #ece7d8;
+  --surface: #fbf8f1;
+  --ink: #1b1a16;
+  --soft: #3b3933;
+  --muted: #57534a;
+  --rule: #d4cdb8;
+  --accent: #1f49c0;
+  --accent-tint: #dfe5f6;
+  --ext: #a87500;
+  --warn: #c4271f;
+  --good: #2c6e49;
+  --head: Futura, "Century Gothic", var(--sans);
+  --head-weight: 700;
+  --radius: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="bayer"] {
+    --bg: #191814;
+    --paper: #23211c;
+    --surface: #1d1c18;
+    --ink: #f1ece0;
+    --soft: #d0c9b8;
+    --muted: #a19a89;
+    --rule: #37342c;
+    --accent: #7d9dff;
+    --accent-tint: #1f2a4a;
+    --ext: #f2c230;
+    --warn: #ff7a6e;
+    --good: #79c79a;
+  }
+}
+
+/* @theme fuller — Fuller · 청사진 (dark only) */
+:root[data-theme="fuller"] {
+  color-scheme: dark;
+  --bg: #213749;
+  --paper: #29404f;
+  --surface: #253c4c;
+  --ink: #eef3f7;
+  --soft: #d2dbe2;
+  --muted: #a3b2bf;
+  --rule: #3a4f5f;
+  --accent: #79c2d0;
+  --accent-tint: #2a4250;
+  --ext: #b9c7f0;
+  --warn: #eda06a;
+  --good: #7fcaa6;
+  --head: var(--sans);
+  --head-weight: 600;
+  --radius: 0;
+}
+
+/* @theme sottsass — Sottsass · 멤피스 */
+:root[data-theme="sottsass"] {
+  color-scheme: light dark;
+  --bg: #fcf7ef;
+  --paper: #f4ecdf;
+  --surface: #fffbf5;
+  --ink: #1a1714;
+  --soft: #3a342e;
+  --muted: #595149;
+  --rule: #e0d6c5;
+  --accent: #2c54e0;
+  --accent-tint: #e0e6fb;
+  --ext: #b07d00;
+  --warn: #c42a59;
+  --good: #0a7368;
+  --head: "Avenir Next", "Century Gothic", var(--sans);
+  --head-weight: 800;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="sottsass"] {
+    --bg: #1b1815;
+    --paper: #26221d;
+    --surface: #211d19;
+    --ink: #f6efe4;
+    --soft: #d6ccbd;
+    --muted: #a69b8d;
+    --rule: #3b352d;
+    --accent: #7d9bff;
+    --accent-tint: #232d52;
+    --ext: #f5c84c;
+    --warn: #ff7aa2;
+    --good: #4fd1c0;
+  }
+}
+
+/* @theme ocean-depths — Ocean Depths · 깊은 바다 */
+:root[data-theme="ocean-depths"] {
+  color-scheme: light dark;
+  --bg: #f4faf6;
+  --paper: #e6f2ef;
+  --surface: #fbfefc;
+  --ink: #1a2332;
+  --soft: #34404f;
+  --muted: #556270;
+  --rule: #c9dedb;
+  --accent: #1f6f70;
+  --accent-tint: #d9eeee;
+  --ext: #4f8fa8;
+  --warn: #a63a2b;
+  --good: #2f6d4f;
+  --head: var(--sans);
+  --head-weight: 700;
+  --radius: 4px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="ocean-depths"] {
+    --bg: #1a2332;
+    --paper: #212c3d;
+    --surface: #1e2838;
+    --ink: #eef6f2;
+    --soft: #c8d6d4;
+    --muted: #95a7ad;
+    --rule: #33425a;
+    --accent: #6cc6c4;
+    --accent-tint: #1f3a40;
+    --ext: #a8dadc;
+    --warn: #f08a78;
+    --good: #7cc79a;
+  }
+}
+
+/* @theme sunset-boulevard — Sunset Boulevard · 노을 */
+:root[data-theme="sunset-boulevard"] {
+  color-scheme: light dark;
+  --bg: #fdf8f1;
+  --paper: #f7ecdc;
+  --surface: #fffcf7;
+  --ink: #1f2f37;
+  --soft: #36505c;
+  --muted: #5a6a70;
+  --rule: #ead9c2;
+  --accent: #b0432a;
+  --accent-tint: #fbe3d9;
+  --ext: #b07a1f;
+  --warn: #962b18;
+  --good: #2f6d4f;
+  --head: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "AppleMyungjo", "Nanum Myeongjo", "Noto Serif KR", Batang, serif;
+  --head-weight: 700;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="sunset-boulevard"] {
+    --bg: #182b33;
+    --paper: #20363f;
+    --surface: #1c3139;
+    --ink: #f5ede3;
+    --soft: #d6cbbd;
+    --muted: #a3a49c;
+    --rule: #34505b;
+    --accent: #f28a6c;
+    --accent-tint: #3d2a24;
+    --ext: #e9c46a;
+    --warn: #ff8a80;
+    --good: #8fc4a3;
+  }
+}
+
+/* @theme forest-canopy — Forest Canopy · 숲 */
+:root[data-theme="forest-canopy"] {
+  color-scheme: light dark;
+  --bg: #faf9f6;
+  --paper: #f0efe7;
+  --surface: #ffffff;
+  --ink: #1e2a1d;
+  --soft: #3a4638;
+  --muted: #5d6455;
+  --rule: #d9dccd;
+  --accent: #2d4a2b;
+  --accent-tint: #e3e9dc;
+  --ext: #7d8471;
+  --warn: #a3361e;
+  --good: #2f6a5a;
+  --head: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "AppleMyungjo", "Nanum Myeongjo", "Noto Serif KR", Batang, serif;
+  --head-weight: 700;
+  --radius: 2px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="forest-canopy"] {
+    --bg: #182217;
+    --paper: #202c1f;
+    --surface: #1c271b;
+    --ink: #eef0e6;
+    --soft: #cdd2c2;
+    --muted: #9da38f;
+    --rule: #344233;
+    --accent: #b5c98f;
+    --accent-tint: #2a3a26;
+    --ext: #a4ac86;
+    --warn: #ee8a6c;
+    --good: #7fcaa6;
+  }
+}
+
+/* @theme midnight-galaxy — Midnight Galaxy · 한밤 은하 */
+:root[data-theme="midnight-galaxy"] {
+  color-scheme: light dark;
+  --bg: #f7f6fc;
+  --paper: #ecebf7;
+  --surface: #ffffff;
+  --ink: #1e1530;
+  --soft: #3b3150;
+  --muted: #5e5670;
+  --rule: #d8d5ea;
+  --accent: #4a4e8f;
+  --accent-tint: #e3e3f3;
+  --ext: #7a63a8;
+  --warn: #a8323e;
+  --good: #2f6d4f;
+  --head: var(--sans);
+  --head-weight: 700;
+  --radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="midnight-galaxy"] {
+    --bg: #21172f;
+    --paper: #2b1e3e;
+    --surface: #261a37;
+    --ink: #eeeefa;
+    --soft: #cfcbe2;
+    --muted: #a29cb8;
+    --rule: #3d3054;
+    --accent: #9ea3f0;
+    --accent-tint: #2e2a52;
+    --ext: #a490c2;
+    --warn: #ff8a9a;
+    --good: #7cc79a;
+  }
+}
+
+/* @theme modern-minimalist — Modern Minimalist · 회색조 */
+:root[data-theme="modern-minimalist"] {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --paper: #f2f3f4;
+  --surface: #ffffff;
+  --ink: #1f2930;
+  --soft: #36454f;
+  --muted: #5a6670;
+  --rule: #d3d3d3;
+  --accent: #3d5a6e;
+  --accent-tint: #e6ebef;
+  --ext: #708090;
+  --warn: #a33a2a;
+  --good: #2f6d4f;
+  --head: var(--sans);
+  --head-weight: 700;
+  --radius: 4px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="modern-minimalist"] {
+    --bg: #16191c;
+    --paper: #1f2327;
+    --surface: #1b1e22;
+    --ink: #eceef0;
+    --soft: #c7cdd2;
+    --muted: #969fa8;
+    --rule: #30363c;
+    --accent: #a9bfd0;
+    --accent-tint: #26313a;
+    --ext: #8c9aa8;
+    --warn: #f08a78;
+    --good: #7cc79a;
+  }
+}
+
+/* @theme golden-hour — Golden Hour · 황금빛 오후 */
+:root[data-theme="golden-hour"] {
+  color-scheme: light dark;
+  --bg: #fbf6ee;
+  --paper: #f2e8d8;
+  --surface: #fffbf5;
+  --ink: #2e2722;
+  --soft: #4a403a;
+  --muted: #6b5f55;
+  --rule: #e3d4bd;
+  --accent: #8a5a00;
+  --accent-tint: #f8e7c0;
+  --ext: #c1666b;
+  --warn: #a3302a;
+  --good: #3f6b34;
+  --head: var(--sans);
+  --head-weight: 700;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="golden-hour"] {
+    --bg: #1f1a16;
+    --paper: #2a231e;
+    --surface: #251f1a;
+    --ink: #f4ece2;
+    --soft: #d8cbbb;
+    --muted: #a89a8a;
+    --rule: #3d342c;
+    --accent: #f4b42a;
+    --accent-tint: #3d3018;
+    --ext: #e0959a;
+    --warn: #ff8a80;
+    --good: #8fc49a;
+  }
+}
+
+/* @theme arctic-frost — Arctic Frost · 얼음 */
+:root[data-theme="arctic-frost"] {
+  color-scheme: light dark;
+  --bg: #fafbfd;
+  --paper: #eaf1fa;
+  --surface: #ffffff;
+  --ink: #17212e;
+  --soft: #344255;
+  --muted: #586578;
+  --rule: #d4e0ee;
+  --accent: #3d5f92;
+  --accent-tint: #dde8f7;
+  --ext: #7d8fa8;
+  --warn: #a8323a;
+  --good: #2f6d55;
+  --head: var(--sans);
+  --head-weight: 700;
+  --radius: 4px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="arctic-frost"] {
+    --bg: #141a22;
+    --paper: #1b232e;
+    --surface: #171e28;
+    --ink: #eef3f9;
+    --soft: #c9d3df;
+    --muted: #96a3b3;
+    --rule: #2c3746;
+    --accent: #8fb1e3;
+    --accent-tint: #1f2c40;
+    --ext: #b0bccb;
+    --warn: #ff8a8a;
+    --good: #7cc7a8;
+  }
+}
+
+/* @theme botanical-garden — Botanical Garden · 정원 */
+:root[data-theme="botanical-garden"] {
+  color-scheme: light dark;
+  --bg: #f5f3ed;
+  --paper: #ebe8dd;
+  --surface: #fbfaf6;
+  --ink: #1e261f;
+  --soft: #3a443b;
+  --muted: #5c6358;
+  --rule: #dcd8c8;
+  --accent: #3c6a4a;
+  --accent-tint: #e0ebe2;
+  --ext: #b07a10;
+  --warn: #a63d22;
+  --good: #2f6d5f;
+  --head: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "AppleMyungjo", "Nanum Myeongjo", "Noto Serif KR", Batang, serif;
+  --head-weight: 700;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="botanical-garden"] {
+    --bg: #18201a;
+    --paper: #212b23;
+    --surface: #1c251e;
+    --ink: #f0eee6;
+    --soft: #cfd2c4;
+    --muted: #9ea493;
+    --rule: #344236;
+    --accent: #8cc79c;
+    --accent-tint: #243a2b;
+    --ext: #f9b84a;
+    --warn: #ee8a6c;
+    --good: #7fcab0;
+  }
+}
+
+/* @theme desert-rose — Desert Rose · 사막 장미 */
+:root[data-theme="desert-rose"] {
+  color-scheme: light dark;
+  --bg: #fcf7f3;
+  --paper: #f4e9df;
+  --surface: #fffbf8;
+  --ink: #2a1a22;
+  --soft: #4a3440;
+  --muted: #6d5660;
+  --rule: #e8d5c4;
+  --accent: #5d2e46;
+  --accent-tint: #f3e1e3;
+  --ext: #b87d6d;
+  --warn: #a3302a;
+  --good: #3f6b4a;
+  --head: var(--sans);
+  --head-weight: 700;
+  --radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="desert-rose"] {
+    --bg: #1f161a;
+    --paper: #2a1e24;
+    --surface: #251a20;
+    --ink: #f5ebe8;
+    --soft: #dccbc8;
+    --muted: #ab9a9a;
+    --rule: #3f2e36;
+    --accent: #e3a6b8;
+    --accent-tint: #3d2430;
+    --ext: #d4a5a5;
+    --warn: #ff8a80;
+    --good: #8fc4a0;
+  }
+}
+
+/* @theme tech-innovation — Tech Innovation · 전기 파랑 */
+:root[data-theme="tech-innovation"] {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --paper: #f1f4f8;
+  --surface: #ffffff;
+  --ink: #121417;
+  --soft: #30353c;
+  --muted: #545b65;
+  --rule: #d9dfe7;
+  --accent: #0057d9;
+  --accent-tint: #e0ebff;
+  --ext: #0089a0;
+  --warn: #c0261f;
+  --good: #1f7a4a;
+  --head: var(--sans);
+  --head-weight: 800;
+  --radius: 4px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="tech-innovation"] {
+    --bg: #1e1e1e;
+    --paper: #262626;
+    --surface: #222222;
+    --ink: #f2f4f7;
+    --soft: #cfd4da;
+    --muted: #9ea5ae;
+    --rule: #383838;
+    --accent: #4d94ff;
+    --accent-tint: #1a2a45;
+    --ext: #00e0e0;
+    --warn: #ff7a6e;
+    --good: #5fd49a;
+  }
+}

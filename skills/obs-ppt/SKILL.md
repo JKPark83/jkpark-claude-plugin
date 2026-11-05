@@ -126,8 +126,10 @@ N+2. 출처 (new-topic mode) / 원문 링크 (conversion mode)
 
 ### 4. Write slides — concise natural Korean
 
-- **Slide titles are conclusions, not labels.** Good: "캐시 도입으로 응답이
-  300ms → 40ms". Bad: "성능 개선".
+- **Slide titles are short noun phrases, not sentences.** Good: "캐시 도입
+  효과", "요약 실패 처리". Bad: "캐시 도입으로 응답이 300ms → 40ms로 줄었다".
+  The conclusion goes in the first bullet or the key number on the slide,
+  not in the title.
 - Slide body: bullets, numbers, short phrases. Sentence endings (`~다`) are
   fine in notes, avoid them in bullets.
 - **Speaker notes per slide: 2–5 sentences of prose** — the explanation you
@@ -140,8 +142,9 @@ N+2. 출처 (new-topic mode) / 원문 링크 (conversion mode)
 
   Output (slide):
   ```
-  제목:  캐시 도입으로 응답 300ms → 40ms
-  본문:  • 기존: 요청마다 DB 조회 (평균 300ms)
+  제목:  캐시 도입 효과
+  본문:  • 평균 응답 300ms → 40ms
+         • 기존: 요청마다 DB 조회
          • Redis 캐시 도입 후 조회의 92%를 캐시가 처리
   노트:  기존 구조는 모든 요청이 DB까지 내려가 평균 300ms가 걸렸다.
          Redis를 앞단에 두자 조회의 92%가 캐시에서 끝나 평균 응답이

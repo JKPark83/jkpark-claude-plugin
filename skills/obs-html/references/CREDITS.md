@@ -8,7 +8,9 @@ obs-html의 다이어그램 규칙, 페이지 템플릿, 검증 절차는 아래
 |---|---|---|
 | [cathrynlavery/diagram-design](https://github.com/cathrynlavery/diagram-design) | MIT | 편집형 다이어그램 철학, 노드 종류 위계, 커넥터 규칙, 복잡도 예산, 안티패턴 → `diagram-design.md` |
 | [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer) | MIT | 반응형 목차·스크롤 스파이, 넘침 방지, 비교 패널·접기 패턴 → `html-template.md`, `assets/template.html` |
-| [anthropics/skills — frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design) | Apache-2.0 | 먼저 설계하고 나중에 비평하는 흐름, AI 티 목록 → `html-template.md` |
+| [anthropics/skills — frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design) | Apache-2.0 | 계획 → 계획 검토 → 짓기 → 비평 흐름, 대담함은 한 곳에, AI 티 목록 → `html-template.md` |
+| [conardli/garden-skills — beautiful-article](https://github.com/conardli/garden-skills) · [reacticle](https://www.npmjs.com/package/reacticle) | MIT | 테마 11종의 팔레트·제목 글꼴 성격·모서리, 테마별 잘 맞는/피할 문서 → `assets/themes.css`, `themes.md` |
+| [anthropics/skills — theme-factory](https://github.com/anthropics/skills/tree/main/skills/theme-factory) | Apache-2.0 | 테마를 고르고 확인받은 뒤 일관되게 입히는 흐름, 맞춤 테마, 팔레트 10종(`ocean-depths`~`tech-innovation`, 4색을 12색 토큰·다크 값으로 확장) → `themes.md`, `assets/themes.css` |
 | [ferdinandobons/diagram-creator-skill](https://github.com/ferdinandobons/diagram-creator-skill) | — | 다이어그램 타입 선택 아이디어 일부 |
 
 한글 라벨 폭 산식, `check_html.py`, `snap.sh`는 이 저장소에서 새로 작성했다.
